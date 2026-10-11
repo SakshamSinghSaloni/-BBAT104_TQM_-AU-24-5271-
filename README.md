@@ -212,4 +212,4 @@ All 17 automated tests pass in `< 1.0s` verifying:
 
 ## License
 
-Academic project — BBAT104 Course, Amity University.
+Academic project — BBAT104 Course, Amrapali University.
