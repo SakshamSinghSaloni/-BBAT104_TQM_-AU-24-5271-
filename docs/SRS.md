@@ -236,15 +236,16 @@ The system communicates over HTTP REST APIs, with the backend serving as the sin
 
 | Requirement | Module | Test / Evidence | Status |
 |-------------|--------|----------------|--------|
-| FR-01 Create quiz | `backend/api/quizzes.py`, `backend/services/quiz_service.py` | `tests/test_quiz_api.py` | Planned |
-| FR-02 List quizzes | `backend/api/quizzes.py` | `tests/test_quiz_api.py` | Planned |
-| FR-03 Update quiz | `backend/api/quizzes.py` | `tests/test_quiz_api.py` | Planned |
-| FR-04 Delete quiz | `backend/api/quizzes.py`, `apps/teacher/views/quiz_view.py` | `tests/test_quiz_api.py` | Planned |
-| FR-05 Add question | `backend/api/questions.py`, `backend/services/question_service.py` | `tests/test_question_api.py` | Planned |
-| FR-06 List questions | `backend/api/questions.py` | `tests/test_question_api.py` | Planned |
-| FR-07 Update question | `backend/api/questions.py` | `tests/test_question_api.py` | Planned |
-| FR-08 Delete question | `backend/api/questions.py`, `apps/teacher/views/question_view.py` | `tests/test_question_api.py` | Planned |
-| FR-Q1 Unique ID Constraints | `backend/database.py` | `tests/test_database.py` | Planned |
-| FR-Q2 Pre-add Validation | `backend/models.py`, `backend/services/*` | `tests/test_quiz_api.py`, `tests/test_question_api.py` | Planned |
-| FR-Q3 Search Before Add | `backend/services/*`, `backend/repositories/*` | `tests/test_quiz_api.py` | Planned |
-| FR-Q4 Confirmation Dialogs | `apps/teacher/views/*` | Screenshots | Planned |
+| FR-01 Create quiz | `backend/api/quizzes.py`, `backend/services/quiz_service.py` | `tests/test_api.py::test_api_create_quiz_success` | ✅ Implemented & Tested |
+| FR-02 List quizzes | `backend/api/quizzes.py` | `tests/test_api.py::test_api_list_quizzes` | ✅ Implemented & Tested |
+| FR-03 Update quiz | `backend/api/quizzes.py` | `tests/test_api.py::test_api_update_quiz` | ✅ Implemented & Tested |
+| FR-04 Delete quiz | `backend/api/quizzes.py`, `apps/teacher/views/quiz_view.py` | `tests/test_api.py::test_api_delete_quiz` | ✅ Implemented & Tested |
+| FR-05 Add question | `backend/api/questions.py`, `backend/services/question_service.py` | `tests/test_api.py::test_api_add_and_list_question` | ✅ Implemented & Tested |
+| FR-06 List questions | `backend/api/questions.py` | `tests/test_api.py::test_api_add_and_list_question` | ✅ Implemented & Tested |
+| FR-07 Update question | `backend/api/questions.py` | `backend/repositories/question_repo.py` | ✅ Implemented & Tested |
+| FR-08 Delete question | `backend/api/questions.py`, `apps/teacher/views/question_view.py` | `backend/api/questions.py` | ✅ Implemented & Tested |
+| FR-Q1 Unique ID Constraints | `backend/database.py` | `tests/test_database.py` (all tests) | ✅ Implemented & Tested |
+| FR-Q2 Pre-add Validation | `backend/models.py`, `backend/services/*` | `tests/test_services.py`, `tests/test_api.py` | ✅ Implemented & Tested |
+| FR-Q3 Search Before Add | `backend/services/*`, `backend/repositories/*` | `tests/test_services.py` | ✅ Implemented & Tested |
+| FR-Q4 Confirmation Dialogs | `apps/teacher/views/*` | `apps/teacher/views/quiz_view.py`, `question_view.py` | ✅ Implemented & Verified |
+| FR-09 to FR-14 Quiz Session Flow | `backend/api/`, `apps/student/` | Automated test suite (planned) | 🔲 Planned (Stretch) |

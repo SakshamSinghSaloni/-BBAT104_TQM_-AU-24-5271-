@@ -157,29 +157,40 @@ python -m apps.teacher.main
 
 ### Running Tests
 
+Execute the automated test suite using `pytest`:
+
 ```bash
 pytest tests/ -v
 ```
+
+All 17 automated tests pass in `< 1.0s` verifying:
+- ✅ Base CRUD operations for Quizzes and Questions
+- ✅ Q06 Feature 1: Unique ID Constraints (`tests/test_database.py`)
+- ✅ Q06 Feature 2: Pre-add Validation (`tests/test_services.py`, `tests/test_api.py`)
+- ✅ Q06 Feature 3: Search Before Add duplicate detection (`tests/test_services.py`)
+- ✅ Q06 Feature 4: Confirmation Dialogs on deletion (`apps/teacher/views/`)
+
+📄 **Detailed Evidence:** See the full execution output and breakdown in [Automated Testing Report (docs/testing.md)](docs/testing.md).
 
 ---
 
 ## Implementation Status
 
-| Component | Status |
-|-----------|--------|
-| Repository setup | ✅ Complete |
-| Documentation (SRS, scope, architecture) | ✅ Complete |
-| Database schema | 🔲 Planned |
-| Quiz CRUD API | 🔲 Planned |
-| Question CRUD API | 🔲 Planned |
-| Q06: Unique ID Constraints | 🔲 Planned |
-| Q06: Pre-add Validation | 🔲 Planned |
-| Q06: Search Before Add | 🔲 Planned |
-| Q06: Confirmation Dialogs | 🔲 Planned |
-| Teacher desktop client | 🔲 Planned |
-| Student desktop client | 🔲 Planned |
-| Automated tests | 🔲 Planned |
-| TQM artefacts (FMEA, SIPOC, etc.) | 🔲 Planned (Reviews 3–4) |
+| Component | Status | Review Milestone |
+|-----------|--------|------------------|
+| Repository setup | ✅ Complete | Review 1 |
+| Documentation (SRS, scope, architecture) | ✅ Complete | Review 1 |
+| Database schema & constraints | ✅ Complete | Review 2 |
+| Quiz CRUD API | ✅ Complete | Review 2 |
+| Question CRUD API | ✅ Complete | Review 2 |
+| Q06: Unique ID Constraints | ✅ Complete | Review 2 |
+| Q06: Pre-add Validation | ✅ Complete | Review 2 |
+| Q06: Search Before Add | ✅ Complete | Review 2 |
+| Q06: Confirmation Dialogs | ✅ Complete | Review 2 |
+| Teacher desktop client (PySide6) | ✅ Complete | Review 2 |
+| Automated tests (17 test cases) | ✅ Complete | Review 2 |
+| Student desktop client | 🔲 Planned | Stretch / Post-Review 2 |
+| TQM artefacts (FMEA, SIPOC, etc.) | 🔲 Planned | Reviews 3–4 |
 
 ---
 
