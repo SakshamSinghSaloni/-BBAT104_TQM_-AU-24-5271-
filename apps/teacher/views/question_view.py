@@ -11,6 +11,7 @@ from __future__ import annotations
 from typing import Optional
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
+    QButtonGroup,
     QComboBox,
     QFormLayout,
     QHBoxLayout,
@@ -19,6 +20,7 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QMessageBox,
     QPushButton,
+    QRadioButton,
     QSpinBox,
     QTableWidget,
     QTableWidgetItem,
@@ -63,17 +65,50 @@ class QuestionView(QWidget):
         form_layout.addWidget(QLabel("<b>Question Type:</b>"))
         self.type_combo = QComboBox()
         self.type_combo.addItems(["mcq", "true_false", "short_answer"])
+        self.type_combo.currentTextChanged.connect(self._on_type_changed)
         form_layout.addWidget(self.type_combo)
 
-        form_layout.addWidget(QLabel("<b>MCQ Options (comma-separated):</b>"))
+        # Options input container (for MCQ)
+        self.options_container = QWidget()
+        options_layout = QVBoxLayout(self.options_container)
+        options_layout.setContentsMargins(0, 0, 0, 0)
+        options_layout.addWidget(QLabel("<b>MCQ Options (comma-separated):</b>"))
         self.options_input = QLineEdit()
         self.options_input.setPlaceholderText("e.g. Option A, Option B, Option C, Option D")
-        form_layout.addWidget(self.options_input)
+        options_layout.addWidget(self.options_input)
+        form_layout.addWidget(self.options_container)
 
-        form_layout.addWidget(QLabel("<b>Correct Answer:</b>"))
+        # Text Correct Answer container (for MCQ and short_answer)
+        self.text_answer_container = QWidget()
+        text_ans_layout = QVBoxLayout(self.text_answer_container)
+        text_ans_layout.setContentsMargins(0, 0, 0, 0)
+        self.answer_label = QLabel("<b>Correct Answer:</b>")
+        text_ans_layout.addWidget(self.answer_label)
         self.answer_input = QLineEdit()
         self.answer_input.setPlaceholderText("Must exactly match one of the options above")
-        form_layout.addWidget(self.answer_input)
+        text_ans_layout.addWidget(self.answer_input)
+        form_layout.addWidget(self.text_answer_container)
+
+        # True/False Radio Buttons container (for true_false)
+        self.tf_container = QWidget()
+        tf_layout = QVBoxLayout(self.tf_container)
+        tf_layout.setContentsMargins(0, 0, 0, 0)
+        tf_layout.addWidget(QLabel("<b>Correct Answer:</b>"))
+        tf_radios = QHBoxLayout()
+        self.radio_true = QRadioButton("True")
+        self.radio_false = QRadioButton("False")
+        self.radio_true.setChecked(True)
+        self.tf_group = QButtonGroup(self)
+        self.tf_group.addButton(self.radio_true)
+        self.tf_group.addButton(self.radio_false)
+        tf_radios.addWidget(self.radio_true)
+        tf_radios.addWidget(self.radio_false)
+        tf_radios.addStretch()
+        tf_layout.addLayout(tf_radios)
+        form_layout.addWidget(self.tf_container)
+
+        # Initialize to MCQ view
+        self.tf_container.setVisible(False)
 
         points_layout = QHBoxLayout()
         points_layout.addWidget(QLabel("<b>Points:</b>"))
@@ -123,10 +158,30 @@ class QuestionView(QWidget):
         layout.addWidget(form_panel, 1)
         layout.addWidget(table_panel, 2)
 
+    def _on_type_changed(self, q_type: str):
+        """Poka-Yoke dynamic form adaptation based on question type."""
+        if q_type == "mcq":
+            self.options_container.setVisible(True)
+            self.text_answer_container.setVisible(True)
+            self.tf_container.setVisible(False)
+            self.answer_label.setText("<b>Correct Answer:</b>")
+            self.answer_input.setPlaceholderText("Must exactly match one of the options above")
+        elif q_type == "true_false":
+            self.options_container.setVisible(False)
+            self.text_answer_container.setVisible(False)
+            self.tf_container.setVisible(True)
+        elif q_type == "short_answer":
+            self.options_container.setVisible(False)
+            self.text_answer_container.setVisible(True)
+            self.tf_container.setVisible(False)
+            self.answer_label.setText("<b>Expected Answer (Single word or phrase):</b>")
+            self.answer_input.setPlaceholderText("Enter the exact correct answer/phrase...")
+
     def _clear_form(self):
         self.text_input.clear()
         self.options_input.clear()
         self.answer_input.clear()
+        self.radio_true.setChecked(True)
         self.points_spin.setValue(1)
 
     def refresh_questions(self):
@@ -151,20 +206,22 @@ class QuestionView(QWidget):
 
         text = self.text_input.toPlainText().strip()
         q_type = self.type_combo.currentText()
-        raw_opts = self.options_input.text().strip()
-        answer = self.answer_input.text().strip()
         points = self.points_spin.value()
 
         # Q06 Pre-add Validation checks
         if not text:
             QMessageBox.warning(self, "Validation Error (Q06)", "Question text cannot be empty!")
             return
-        if not answer:
-            QMessageBox.warning(self, "Validation Error (Q06)", "Correct answer cannot be empty!")
-            return
 
         options = None
+        answer = ""
+
         if q_type == "mcq":
+            raw_opts = self.options_input.text().strip()
+            answer = self.answer_input.text().strip()
+            if not answer:
+                QMessageBox.warning(self, "Validation Error (Q06)", "Correct answer cannot be empty!")
+                return
             options = [opt.strip() for opt in raw_opts.split(",") if opt.strip()]
             if len(options) < 2:
                 QMessageBox.warning(self, "Validation Error (Q06)", "MCQ questions must have at least 2 options (comma-separated).")
@@ -176,6 +233,17 @@ class QuestionView(QWidget):
                     f"Correct answer '{answer}' must exactly match one of the options: {options}"
                 )
                 return
+
+        elif q_type == "true_false":
+            options = ["True", "False"]
+            answer = "True" if self.radio_true.isChecked() else "False"
+
+        elif q_type == "short_answer":
+            answer = self.answer_input.text().strip()
+            if not answer:
+                QMessageBox.warning(self, "Validation Error (Q06)", "Expected answer cannot be empty!")
+                return
+            options = None
 
         try:
             res = self.api_client.add_question(
