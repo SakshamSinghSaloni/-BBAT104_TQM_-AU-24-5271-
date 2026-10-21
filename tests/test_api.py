@@ -49,6 +49,17 @@ def test_api_q06_pre_add_validation_rejects_empty_title(client):
     assert resp.status_code == 422
 
 
+def test_api_q06_search_before_add_rejects_duplicate_quiz(client):
+    """FR-Q3: API returns 409 Conflict when attempting to create duplicate quiz title."""
+    payload = {"title": "Web Development", "description": "HTML & CSS"}
+    resp1 = client.post("/api/quizzes", json=payload)
+    assert resp1.status_code == 201
+
+    resp2 = client.post("/api/quizzes", json=payload)
+    assert resp2.status_code == 409
+    assert "already exists" in resp2.json()["detail"]
+
+
 def test_api_list_quizzes(client):
     """FR-02: List quizzes returns all created quizzes."""
     client.post("/api/quizzes", json={"title": "Quiz A"})
@@ -106,6 +117,24 @@ def test_api_add_and_list_question(client):
     # Check quiz now reports 1 question
     quiz_resp = client.get(f"/api/quizzes/{quiz_id}").json()
     assert quiz_resp["question_count"] == 1
+
+
+def test_api_q06_search_before_add_rejects_duplicate_question(client):
+    """FR-Q3: API returns 409 Conflict when adding duplicate question to same quiz."""
+    quiz_id = client.post("/api/quizzes", json={"title": "Discrete Math"}).json()["id"]
+
+    q_payload = {
+        "question_text": "Is the empty set a subset of every set?",
+        "question_type": "true_false",
+        "correct_answer": "True",
+        "points": 1,
+    }
+    resp1 = client.post(f"/api/quizzes/{quiz_id}/questions", json=q_payload)
+    assert resp1.status_code == 201
+
+    resp2 = client.post(f"/api/quizzes/{quiz_id}/questions", json=q_payload)
+    assert resp2.status_code == 409
+    assert "already exists" in resp2.json()["detail"]
 
 
 def test_api_q06_pre_add_validation_question_options(client):

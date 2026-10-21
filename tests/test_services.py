@@ -69,19 +69,19 @@ def test_q06_pre_add_validation_mcq_answer_must_be_in_options():
 # ========================================================
 
 def test_q06_search_before_add_quiz_duplicate_detection(service_db):
-    """FR-Q3: Search detects matching title and issues advisory warning."""
+    """FR-Q3: Search detects matching title and blocks duplicate quiz creation."""
     service = QuizService(service_db)
     q1 = service.create_quiz(title="Database Systems", description="First")
-    assert "duplicate_warning" not in q1
+    assert q1["id"] is not None
 
-    # Adding another quiz with the identical title
-    q2 = service.create_quiz(title="Database Systems", description="Second")
-    assert "duplicate_warning" in q2
-    assert "already exists" in q2["duplicate_warning"]
+    # Adding another quiz with the identical title must be blocked with ValueError
+    with pytest.raises(ValueError) as exc:
+        service.create_quiz(title="Database Systems", description="Second")
+    assert "already exists" in str(exc.value)
 
 
 def test_q06_search_before_add_question_duplicate_in_quiz(service_db):
-    """FR-Q3: Search identifies duplicate question in the same quiz."""
+    """FR-Q3: Search identifies duplicate question in the same quiz and blocks creation."""
     quiz_svc = QuizService(service_db)
     q_svc = QuestionService(service_db)
 
@@ -95,15 +95,15 @@ def test_q06_search_before_add_question_duplicate_in_quiz(service_db):
         options=["Yes", "No"],
         correct_answer="Yes",
     )
-    assert "duplicate_warning" not in item1
+    assert item1["id"] is not None
 
-    # Add duplicate question
-    item2 = q_svc.add_question(
-        quiz_id=quiz_id,
-        question_text="  Is 5 a prime number? ",
-        question_type="mcq",
-        options=["Yes", "No"],
-        correct_answer="Yes",
-    )
-    assert "duplicate_warning" in item2
-    assert "identical question already exists" in item2["duplicate_warning"]
+    # Adding duplicate question in the same quiz must raise ValueError
+    with pytest.raises(ValueError) as exc:
+        q_svc.add_question(
+            quiz_id=quiz_id,
+            question_text="  Is 5 a prime number? ",
+            question_type="mcq",
+            options=["Yes", "No"],
+            correct_answer="Yes",
+        )
+    assert "already exists" in str(exc.value)

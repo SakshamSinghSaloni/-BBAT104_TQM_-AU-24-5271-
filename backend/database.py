@@ -60,7 +60,7 @@ def init_db(db_path: Path | str | None = None) -> None:
             """
             CREATE TABLE IF NOT EXISTS quizzes (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                title TEXT NOT NULL,
+                title TEXT NOT NULL UNIQUE,
                 description TEXT,
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL
@@ -81,7 +81,8 @@ def init_db(db_path: Path | str | None = None) -> None:
                 points INTEGER NOT NULL DEFAULT 1,
                 order_index INTEGER NOT NULL DEFAULT 0,
                 created_at TEXT NOT NULL,
-                FOREIGN KEY (quiz_id) REFERENCES quizzes(id) ON DELETE CASCADE
+                FOREIGN KEY (quiz_id) REFERENCES quizzes(id) ON DELETE CASCADE,
+                CONSTRAINT uq_quiz_question_text UNIQUE (quiz_id, question_text)
             );
             """
         )

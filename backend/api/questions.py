@@ -37,6 +37,8 @@ def add_question(
         )
     except KeyError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
 
 
 @router.get("/api/quizzes/{quiz_id}/questions", response_model=List[QuestionResponse])

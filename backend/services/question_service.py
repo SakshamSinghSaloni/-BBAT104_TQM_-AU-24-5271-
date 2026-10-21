@@ -38,10 +38,14 @@ class QuestionService:
         if not quiz:
             raise KeyError(f"Quiz with ID {quiz_id} not found.")
 
-        # 2. Q06 Feature 3: Search Before Add
+        # 2. Q06 Feature 3: Search Before Add (Strict Duplicate Prevention)
         duplicate_matches = self.question_repo.find_duplicate_in_quiz(quiz_id, question_text)
+        if duplicate_matches:
+            raise ValueError(
+                f"An identical question already exists in this quiz (Question #{duplicate_matches[0]['id']}). Duplicate questions are not allowed."
+            )
 
-        question = self.question_repo.create(
+        return self.question_repo.create(
             quiz_id=quiz_id,
             question_text=question_text,
             question_type=question_type,
@@ -50,13 +54,6 @@ class QuestionService:
             points=points,
             order_index=order_index,
         )
-
-        if duplicate_matches:
-            question["duplicate_warning"] = (
-                f"Notice: An identical question already exists in this quiz (Question ID: {duplicate_matches[0]['id']})."
-            )
-
-        return question
 
     def get_question(self, question_id: int) -> Optional[Dict[str, Any]]:
         return self.question_repo.get_by_id(question_id)

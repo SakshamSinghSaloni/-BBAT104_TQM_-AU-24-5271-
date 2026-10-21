@@ -21,16 +21,14 @@ class QuizService:
         Create a new quiz record.
         Includes Q06 Search Before Add check to audit duplicate titles.
         """
-        # Q06 Feature 3: Search Before Add
+        # Q06 Feature 3: Search Before Add (Strict Duplicate Prevention)
         existing = self.repo.find_by_title(title)
-        quiz = self.repo.create(title=title, description=description)
-
-        # Attach duplicate warning metadata if a quiz with the same title already existed
         if existing:
-            quiz["duplicate_warning"] = (
-                f"Notice: A quiz with the title '{title}' already exists (ID: {existing[0]['id']})."
+            raise ValueError(
+                f"A quiz with title '{title}' already exists (Quiz #{existing[0]['id']}). Duplicate quizzes are not allowed."
             )
-        return quiz
+
+        return self.repo.create(title=title, description=description)
 
     def get_quiz(self, quiz_id: int) -> Optional[Dict[str, Any]]:
         return self.repo.get_by_id(quiz_id)

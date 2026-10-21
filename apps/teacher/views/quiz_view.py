@@ -137,18 +137,21 @@ class QuizView(QWidget):
 
         try:
             res = self.api_client.create_quiz(title=title, description=desc)
-            if "duplicate_warning" in res:
-                QMessageBox.information(
-                    self,
-                    "Duplicate Search Notice (Q06)",
-                    res["duplicate_warning"] + "\n\nQuiz was still created with unique ID: " + str(res["id"])
-                )
-            else:
-                QMessageBox.information(self, "Success", f"Quiz '{title}' created successfully!")
+            QMessageBox.information(self, "Success", f"Quiz '{title}' created successfully with ID #{res['id']}!")
             self._clear_form()
             self.refresh_quizzes()
         except Exception as exc:
-            QMessageBox.critical(self, "Error", f"Failed to create quiz: {exc}")
+            err_msg = str(exc)
+            # Friendly duplicate warning on 409 Conflict
+            if "409" in err_msg or "already exists" in err_msg:
+                QMessageBox.warning(
+                    self,
+                    "Duplicate Quiz Detected (Q06: Search Before Add)",
+                    f"A quiz titled '{title}' already exists!\n\n"
+                    "Duplicate quiz entries are blocked to protect data integrity.",
+                )
+            else:
+                QMessageBox.critical(self, "Error", f"Failed to create quiz: {exc}")
 
     def _get_selected_quiz_id(self) -> Optional[int]:
         selected_rows = self.table.selectionModel().selectedRows()

@@ -13,10 +13,10 @@
 
 | Metric | Value |
 | :--- | :--- |
-| **Total Tests Executed** | 17 |
-| **Passed** | 17 (100%) |
+| **Total Tests Executed** | 19 |
+| **Passed** | 19 (100%) |
 | **Failed / Errors** | 0 |
-| **Execution Time** | 0.86 seconds |
+| **Execution Time** | 1.01 seconds |
 | **Target Review** | Review 2 (Base System & CRUD + Q06 Quality Goal) |
 
 All core CRUD modules and all 4 assigned Q06 quality-goal features have been validated through repeatable, automated unit and integration tests.
@@ -31,27 +31,29 @@ platform win32 -- Python 3.13.5, pytest-9.1.1, pluggy-1.6.0
 rootdir: D:\AU\Notes\Semester 5\TQM\Project\BBAT104_TQM_[AU-24-5271]
 plugins: anyio-4.15.1, asyncio-1.4.0
 asyncio: mode=Mode.STRICT, debug=False
-collected 17 items
+collected 19 items
 
 tests/test_api.py::test_api_create_quiz_success PASSED                   [  5%]
-tests/test_api.py::test_api_q06_pre_add_validation_rejects_empty_title PASSED [ 11%]
-tests/test_api.py::test_api_list_quizzes PASSED                          [ 17%]
-tests/test_api.py::test_api_update_quiz PASSED                           [ 23%]
-tests/test_api.py::test_api_delete_quiz PASSED                           [ 29%]
-tests/test_api.py::test_api_add_and_list_question PASSED                 [ 35%]
-tests/test_api.py::test_api_q06_pre_add_validation_question_options PASSED [ 41%]
-tests/test_database.py::test_tables_created_successfully PASSED          [ 47%]
-tests/test_database.py::test_foreign_key_cascade_deletion PASSED         [ 52%]
-tests/test_database.py::test_q06_unique_session_code_constraint PASSED   [ 58%]
-tests/test_database.py::test_q06_unique_participant_per_session_constraint PASSED [ 64%]
-tests/test_services.py::test_q06_pre_add_validation_quiz_empty_title PASSED [ 70%]
-tests/test_services.py::test_q06_pre_add_validation_quiz_valid_clean PASSED [ 76%]
-tests/test_services.py::test_q06_pre_add_validation_mcq_requires_options PASSED [ 82%]
-tests/test_services.py::test_q06_pre_add_validation_mcq_answer_must_be_in_options PASSED [ 88%]
+tests/test_api.py::test_api_q06_pre_add_validation_rejects_empty_title PASSED [ 10%]
+tests/test_api.py::test_api_q06_search_before_add_rejects_duplicate_quiz PASSED [ 15%]
+tests/test_api.py::test_api_list_quizzes PASSED                          [ 21%]
+tests/test_api.py::test_api_update_quiz PASSED                           [ 26%]
+tests/test_api.py::test_api_delete_quiz PASSED                           [ 31%]
+tests/test_api.py::test_api_add_and_list_question PASSED                 [ 36%]
+tests/test_api.py::test_api_q06_search_before_add_rejects_duplicate_question PASSED [ 42%]
+tests/test_api.py::test_api_q06_pre_add_validation_question_options PASSED [ 47%]
+tests/test_database.py::test_tables_created_successfully PASSED          [ 52%]
+tests/test_database.py::test_foreign_key_cascade_deletion PASSED         [ 57%]
+tests/test_database.py::test_q06_unique_session_code_constraint PASSED   [ 63%]
+tests/test_database.py::test_q06_unique_participant_per_session_constraint PASSED [ 68%]
+tests/test_services.py::test_q06_pre_add_validation_quiz_empty_title PASSED [ 73%]
+tests/test_services.py::test_q06_pre_add_validation_quiz_valid_clean PASSED [ 78%]
+tests/test_services.py::test_q06_pre_add_validation_mcq_requires_options PASSED [ 84%]
+tests/test_services.py::test_q06_pre_add_validation_mcq_answer_must_be_in_options PASSED [ 89%]
 tests/test_services.py::test_q06_search_before_add_quiz_duplicate_detection PASSED [ 94%]
 tests/test_services.py::test_q06_search_before_add_question_duplicate_in_quiz PASSED [100%]
 
-======================== 17 passed in 0.86s ========================
+======================== 19 passed in 1.01s ========================
 ```
 
 ---

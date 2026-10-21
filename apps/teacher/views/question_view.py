@@ -186,19 +186,20 @@ class QuestionView(QWidget):
                 correct_answer=answer,
                 points=points,
             )
-            if "duplicate_warning" in res:
-                QMessageBox.information(
-                    self,
-                    "Duplicate Search Notice (Q06)",
-                    res["duplicate_warning"] + f"\n\nQuestion added with ID #{res['id']}."
-                )
-            else:
-                QMessageBox.information(self, "Success", "Question added successfully!")
-
+            QMessageBox.information(self, "Success", f"Question added successfully with ID #{res['id']}!")
             self._clear_form()
             self.refresh_questions()
         except Exception as exc:
-            QMessageBox.critical(self, "Error", f"Failed to add question: {exc}")
+            err_msg = str(exc)
+            if "409" in err_msg or "already exists" in err_msg:
+                QMessageBox.warning(
+                    self,
+                    "Duplicate Question Detected (Q06: Search Before Add)",
+                    f"This question prompt already exists in this quiz!\n\n"
+                    "Duplicate questions are blocked to ensure quiz integrity.",
+                )
+            else:
+                QMessageBox.critical(self, "Error", f"Failed to add question: {exc}")
 
     def _on_delete_question(self):
         """Enforces Q06 Feature 4: Confirmation Dialogs."""

@@ -19,7 +19,10 @@ router = APIRouter(prefix="/api/quizzes", tags=["Quizzes"])
 def create_quiz(quiz_in: QuizCreate, conn: sqlite3.Connection = Depends(get_db)):
     """Create a new quiz with Q06 Pre-add Validation and Search Before Add."""
     service = QuizService(conn)
-    return service.create_quiz(title=quiz_in.title, description=quiz_in.description)
+    try:
+        return service.create_quiz(title=quiz_in.title, description=quiz_in.description)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
 
 
 @router.get("", response_model=List[QuizResponse])
