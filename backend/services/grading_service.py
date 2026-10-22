@@ -2,7 +2,7 @@
 Auto-grading and answer evaluation service for the Online Quiz System.
 
 Enforces:
-- Normalized, whitespace-trimmed, case-insensitive comparison for short_answer and true_false questions.
+- Normalized, whitespace-trimmed, case-insensitive comparison across question types.
 - Exact option matching for multiple-choice questions (mcq).
 - Zero-defect grading calculation (customer focus / error prevention).
 """
@@ -29,25 +29,7 @@ class GradingService:
         if not clean_submitted:
             return False, 0, "No answer provided."
 
-        if question_type == "short_answer":
-            # Case-insensitive, whitespace-normalized evaluation
-            is_match = clean_submitted.casefold() == clean_correct.casefold()
-            explanation = "Correct" if is_match else f"Expected '{clean_correct}'"
-            return is_match, (1 if is_match else 0), explanation
-
-        elif question_type == "true_false":
-            # Normalized boolean comparison
-            is_match = clean_submitted.casefold() == clean_correct.casefold()
-            explanation = "Correct" if is_match else f"Expected '{clean_correct}'"
-            return is_match, (1 if is_match else 0), explanation
-
-        elif question_type == "mcq":
-            # Strict option match (case-insensitive for safety)
-            is_match = clean_submitted.strip().casefold() == clean_correct.strip().casefold()
-            explanation = "Correct" if is_match else f"Expected '{clean_correct}'"
-            return is_match, (1 if is_match else 0), explanation
-
-        else:
-            # Fallback for generic question types
-            is_match = clean_submitted.casefold() == clean_correct.casefold()
-            return is_match, (1 if is_match else 0), "Evaluated"
+        # Case-insensitive, whitespace-trimmed comparison across all supported question types
+        is_match = clean_submitted.casefold() == clean_correct.casefold()
+        explanation = "Correct" if is_match else f"Expected '{clean_correct}'"
+        return is_match, (1 if is_match else 0), explanation
