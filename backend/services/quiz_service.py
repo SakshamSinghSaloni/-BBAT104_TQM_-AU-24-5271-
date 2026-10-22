@@ -39,6 +39,19 @@ class QuizService:
     def update_quiz(
         self, quiz_id: int, title: Optional[str] = None, description: Optional[str] = None
     ) -> Optional[Dict[str, Any]]:
+        # Verify quiz exists
+        existing = self.repo.get_by_id(quiz_id)
+        if not existing:
+            return None
+
+        # Q06 Feature 3: Search Before Add (Strict Duplicate Prevention on title update)
+        if title is not None and title.strip().lower() != existing["title"].strip().lower():
+            duplicates = self.repo.find_by_title(title)
+            if duplicates:
+                raise ValueError(
+                    f"A quiz with title '{title}' already exists (Quiz #{duplicates[0]['id']}). Duplicate quizzes are not allowed."
+                )
+
         return self.repo.update(quiz_id, title=title, description=description)
 
     def delete_quiz(self, quiz_id: int) -> bool:

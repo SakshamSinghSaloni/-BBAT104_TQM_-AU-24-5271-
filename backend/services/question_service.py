@@ -73,6 +73,29 @@ class QuestionService:
         points: Optional[int] = None,
         order_index: Optional[int] = None,
     ) -> Optional[Dict[str, Any]]:
+        existing = self.question_repo.get_by_id(question_id)
+        if not existing:
+            return None
+
+        # Q06 Feature 3: Search Before Add (Strict Duplicate Prevention on question update)
+        if question_text is not None and question_text.strip().lower() != existing["question_text"].strip().lower():
+            duplicates = self.question_repo.find_duplicate_in_quiz(existing["quiz_id"], question_text)
+            other_duplicates = [d for d in duplicates if d["id"] != question_id]
+            if other_duplicates:
+                raise ValueError(
+                    f"An identical question already exists in this quiz (Question #{other_duplicates[0]['id']}). Duplicate questions are not allowed."
+                )
+
+        # Q06 Feature 2: Pre-add Validation (cross-field consistency on MCQ update)
+        final_options = options if options is not None else existing.get("options")
+        final_answer = correct_answer if correct_answer is not None else existing["correct_answer"]
+        question_type = existing.get("question_type", "mcq")
+        if question_type == "mcq" and final_options:
+            if final_answer not in final_options:
+                raise ValueError(
+                    f"Correct answer '{final_answer}' must be present in the options: {final_options}"
+                )
+
         return self.question_repo.update(
             question_id=question_id,
             question_text=question_text,

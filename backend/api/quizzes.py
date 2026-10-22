@@ -51,9 +51,12 @@ def update_quiz(
 ):
     """Update quiz metadata."""
     service = QuizService(conn)
-    updated = service.update_quiz(
-        quiz_id=quiz_id, title=quiz_in.title, description=quiz_in.description
-    )
+    try:
+        updated = service.update_quiz(
+            quiz_id=quiz_id, title=quiz_in.title, description=quiz_in.description
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
     if not updated:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

@@ -70,14 +70,17 @@ def update_question(
 ):
     """Update a question."""
     service = QuestionService(conn)
-    updated = service.update_question(
-        question_id=question_id,
-        question_text=q_in.question_text,
-        options=q_in.options,
-        correct_answer=q_in.correct_answer,
-        points=q_in.points,
-        order_index=q_in.order_index,
-    )
+    try:
+        updated = service.update_question(
+            question_id=question_id,
+            question_text=q_in.question_text,
+            options=q_in.options,
+            correct_answer=q_in.correct_answer,
+            points=q_in.points,
+            order_index=q_in.order_index,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
     if not updated:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
