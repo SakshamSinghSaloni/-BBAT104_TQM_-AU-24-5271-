@@ -13,13 +13,13 @@
 
 | Metric | Value |
 | :--- | :--- |
-| **Total Tests Executed** | 19 |
-| **Passed** | 19 (100%) |
+| **Total Tests Executed** | 23 |
+| **Passed** | 23 (100%) |
 | **Failed / Errors** | 0 |
-| **Execution Time** | 1.01 seconds |
-| **Target Review** | Review 2 (Base System & CRUD + Q06 Quality Goal) |
+| **Execution Time** | 1.11 seconds |
+| **Target Review** | Review 2 (Base System & CRUD + Q06 Quality Goal + Auto-Grading) |
 
-All core CRUD modules and all 4 assigned Q06 quality-goal features have been validated through repeatable, automated unit and integration tests.
+All core CRUD modules, auto-grading algorithms, and assigned Q06 quality-goal features have been validated through repeatable, automated unit and integration tests.
 
 ---
 
@@ -31,29 +31,33 @@ platform win32 -- Python 3.13.5, pytest-9.1.1, pluggy-1.6.0
 rootdir: D:\AU\Notes\Semester 5\TQM\Project\BBAT104_TQM_[AU-24-5271]
 plugins: anyio-4.15.1, asyncio-1.4.0
 asyncio: mode=Mode.STRICT, debug=False
-collected 19 items
+collected 23 items
 
-tests/test_api.py::test_api_create_quiz_success PASSED                   [  5%]
-tests/test_api.py::test_api_q06_pre_add_validation_rejects_empty_title PASSED [ 10%]
-tests/test_api.py::test_api_q06_search_before_add_rejects_duplicate_quiz PASSED [ 15%]
-tests/test_api.py::test_api_list_quizzes PASSED                          [ 21%]
-tests/test_api.py::test_api_update_quiz PASSED                           [ 26%]
-tests/test_api.py::test_api_delete_quiz PASSED                           [ 31%]
-tests/test_api.py::test_api_add_and_list_question PASSED                 [ 36%]
-tests/test_api.py::test_api_q06_search_before_add_rejects_duplicate_question PASSED [ 42%]
-tests/test_api.py::test_api_q06_pre_add_validation_question_options PASSED [ 47%]
-tests/test_database.py::test_tables_created_successfully PASSED          [ 52%]
-tests/test_database.py::test_foreign_key_cascade_deletion PASSED         [ 57%]
-tests/test_database.py::test_q06_unique_session_code_constraint PASSED   [ 63%]
-tests/test_database.py::test_q06_unique_participant_per_session_constraint PASSED [ 68%]
-tests/test_services.py::test_q06_pre_add_validation_quiz_empty_title PASSED [ 73%]
-tests/test_services.py::test_q06_pre_add_validation_quiz_valid_clean PASSED [ 78%]
-tests/test_services.py::test_q06_pre_add_validation_mcq_requires_options PASSED [ 84%]
-tests/test_services.py::test_q06_pre_add_validation_mcq_answer_must_be_in_options PASSED [ 89%]
-tests/test_services.py::test_q06_search_before_add_quiz_duplicate_detection PASSED [ 94%]
+tests/test_api.py::test_api_create_quiz_success PASSED                   [  4%]
+tests/test_api.py::test_api_q06_pre_add_validation_rejects_empty_title PASSED [  8%]
+tests/test_api.py::test_api_q06_search_before_add_rejects_duplicate_quiz PASSED [ 13%]
+tests/test_api.py::test_api_list_quizzes PASSED                          [ 17%]
+tests/test_api.py::test_api_update_quiz PASSED                           [ 21%]
+tests/test_api.py::test_api_delete_quiz PASSED                           [ 26%]
+tests/test_api.py::test_api_add_and_list_question PASSED                 [ 30%]
+tests/test_api.py::test_api_q06_search_before_add_rejects_duplicate_question PASSED [ 34%]
+tests/test_api.py::test_api_q06_pre_add_validation_question_options PASSED [ 39%]
+tests/test_database.py::test_tables_created_successfully PASSED          [ 43%]
+tests/test_database.py::test_foreign_key_cascade_deletion PASSED         [ 47%]
+tests/test_database.py::test_q06_unique_session_code_constraint PASSED   [ 52%]
+tests/test_database.py::test_q06_unique_participant_per_session_constraint PASSED [ 56%]
+tests/test_grading.py::test_short_answer_case_insensitivity PASSED       [ 60%]
+tests/test_grading.py::test_short_answer_whitespace_trimming PASSED      [ 65%]
+tests/test_grading.py::test_short_answer_incorrect PASSED                [ 69%]
+tests/test_grading.py::test_true_false_evaluation PASSED                 [ 73%]
+tests/test_services.py::test_q06_pre_add_validation_quiz_empty_title PASSED [ 78%]
+tests/test_services.py::test_q06_pre_add_validation_quiz_valid_clean PASSED [ 82%]
+tests/test_services.py::test_q06_pre_add_validation_mcq_requires_options PASSED [ 86%]
+tests/test_services.py::test_q06_pre_add_validation_mcq_answer_must_be_in_options PASSED [ 91%]
+tests/test_services.py::test_q06_search_before_add_quiz_duplicate_detection PASSED [ 95%]
 tests/test_services.py::test_q06_search_before_add_question_duplicate_in_quiz PASSED [100%]
 
-======================== 19 passed in 1.01s ========================
+======================== 23 passed in 1.11s ========================
 ```
 
 ---
@@ -114,6 +118,17 @@ tests/test_services.py::test_q06_search_before_add_question_duplicate_in_quiz PA
 | `test_api_update_quiz` | `tests/test_api.py` | **Update** Quiz (`PUT /api/quizzes/{id}` $\rightarrow$ 200 OK) | **PASS** |
 | `test_api_delete_quiz` | `tests/test_api.py` | **Delete** Quiz (`DELETE /api/quizzes/{id}` $\rightarrow$ 200 OK) | **PASS** |
 | `test_api_add_and_list_question` | `tests/test_api.py` | **Create & Read** Question (`POST/GET /api/quizzes/{id}/questions`) | **PASS** |
+
+---
+
+### 3.6 Auto-Grading & Case-Insensitive Evaluation (Customer Focus / Poka-Yoke)
+
+| Test Function | File | Operation Verified | Result |
+| :--- | :--- | :--- | :---: |
+| `test_short_answer_case_insensitivity` | `tests/test_grading.py` | Verifies short answers match regardless of casing (`python` == `Python` == `PYTHON`). | **PASS** |
+| `test_short_answer_whitespace_trimming` | `tests/test_grading.py` | Verifies leading and trailing whitespaces are trimmed prior to evaluation. | **PASS** |
+| `test_short_answer_incorrect` | `tests/test_grading.py` | Confirms actually incorrect short answers receive 0 points with helpful feedback. | **PASS** |
+| `test_true_false_evaluation` | `tests/test_grading.py` | Verifies robust normalized boolean matching for True/False questions. | **PASS** |
 
 ---
 
