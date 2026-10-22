@@ -163,11 +163,11 @@ Execute the automated test suite using `pytest`:
 pytest tests/ -v
 ```
 
-All 23 automated tests pass in `< 1.2s` verifying:
-- ✅ Base CRUD operations for Quizzes and Questions
+All 29 automated tests pass in `< 1.3s` verifying:
+- ✅ Base CRUD operations for Quizzes and Questions (Create, Read, Update, Delete)
 - ✅ Q06 Feature 1: Unique ID Constraints (`tests/test_database.py`)
-- ✅ Q06 Feature 2: Pre-add Validation (`tests/test_services.py`, `tests/test_api.py`)
-- ✅ Q06 Feature 3: Search Before Add duplicate detection (`tests/test_services.py`, `tests/test_api.py`)
+- ✅ Q06 Feature 2: Pre-add Validation on Create & Update (`tests/test_services.py`, `tests/test_api.py`)
+- ✅ Q06 Feature 3: Search Before Add duplicate detection on Create & Update (`tests/test_services.py`, `tests/test_api.py`)
 - ✅ Q06 Feature 4: Confirmation Dialogs on deletion (`apps/teacher/views/`)
 - ✅ Auto-grading: Case-insensitive & whitespace-normalized evaluation (`tests/test_grading.py`)
 
@@ -189,7 +189,7 @@ All 23 automated tests pass in `< 1.2s` verifying:
 | Q06: Search Before Add | ✅ Complete | Review 2 |
 | Q06: Confirmation Dialogs | ✅ Complete | Review 2 |
 | Teacher desktop client (PySide6) | ✅ Complete | Review 2 |
-| Automated tests (23 test cases) | ✅ Complete | Review 2 |
+| Automated tests (29 test cases) | ✅ Complete | Review 2 |
 | Student desktop client | 🔲 Planned | Stretch / Post-Review 2 |
 | TQM artefacts (FMEA, SIPOC, etc.) | 🔲 Planned | Reviews 3–4 |
 

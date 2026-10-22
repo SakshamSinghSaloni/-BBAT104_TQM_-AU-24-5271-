@@ -149,3 +149,81 @@ def test_api_q06_pre_add_validation_question_options(client):
     }
     resp = client.post(f"/api/quizzes/{quiz_id}/questions", json=bad_payload)
     assert resp.status_code == 422
+
+
+def test_api_update_question(client):
+    """FR-07: Update question modifications persist."""
+    quiz_id = client.post("/api/quizzes", json={"title": "Update Q Test"}).json()["id"]
+    q_payload = {
+        "question_text": "Original text?",
+        "question_type": "mcq",
+        "options": ["A", "B", "C"],
+        "correct_answer": "A",
+        "points": 1,
+    }
+    q_id = client.post(f"/api/quizzes/{quiz_id}/questions", json=q_payload).json()["id"]
+
+    resp = client.put(f"/api/questions/{q_id}", json={"question_text": "Updated text?", "correct_answer": "B"})
+    assert resp.status_code == 200
+    assert resp.json()["question_text"] == "Updated text?"
+    assert resp.json()["correct_answer"] == "B"
+
+
+def test_api_delete_question(client):
+    """FR-08: Delete question removes record."""
+    quiz_id = client.post("/api/quizzes", json={"title": "Delete Q Test"}).json()["id"]
+    q_payload = {
+        "question_text": "To be deleted?",
+        "question_type": "mcq",
+        "options": ["X", "Y"],
+        "correct_answer": "X",
+    }
+    q_id = client.post(f"/api/quizzes/{quiz_id}/questions", json=q_payload).json()["id"]
+
+    resp = client.delete(f"/api/questions/{q_id}")
+    assert resp.status_code == 200
+
+    assert client.get(f"/api/questions/{q_id}").status_code == 404
+
+
+def test_api_update_question_rejects_answer_not_in_options(client):
+    """FR-Q2: Update path validates answer is in options."""
+    quiz_id = client.post("/api/quizzes", json={"title": "Validation Test"}).json()["id"]
+    q_payload = {
+        "question_text": "Pick one",
+        "question_type": "mcq",
+        "options": ["A", "B"],
+        "correct_answer": "A",
+    }
+    q_id = client.post(f"/api/quizzes/{quiz_id}/questions", json=q_payload).json()["id"]
+
+    resp = client.put(f"/api/questions/{q_id}", json={"correct_answer": "Z"})
+    assert resp.status_code == 409
+    assert "must be present in the options" in resp.json()["detail"]
+
+
+def test_api_update_quiz_rejects_duplicate_title(client):
+    """FR-Q3: Update path detects duplicate title."""
+    client.post("/api/quizzes", json={"title": "Existing Quiz"})
+    second = client.post("/api/quizzes", json={"title": "Another Quiz"}).json()
+
+    resp = client.put(f"/api/quizzes/{second['id']}", json={"title": "Existing Quiz"})
+    assert resp.status_code == 409
+    assert "already exists" in resp.json()["detail"]
+
+
+def test_api_update_question_rejects_duplicate_text(client):
+    """FR-Q3: Update question rejects duplicate prompt in the same quiz."""
+    quiz_id = client.post("/api/quizzes", json={"title": "Dup Q Test"}).json()["id"]
+    client.post(
+        f"/api/quizzes/{quiz_id}/questions",
+        json={"question_text": "Q1 Text", "question_type": "mcq", "options": ["A", "B"], "correct_answer": "A"},
+    )
+    q2 = client.post(
+        f"/api/quizzes/{quiz_id}/questions",
+        json={"question_text": "Q2 Text", "question_type": "mcq", "options": ["A", "B"], "correct_answer": "A"},
+    ).json()
+
+    resp = client.put(f"/api/questions/{q2['id']}", json={"question_text": "Q1 Text"})
+    assert resp.status_code == 409
+    assert "already exists" in resp.json()["detail"]
