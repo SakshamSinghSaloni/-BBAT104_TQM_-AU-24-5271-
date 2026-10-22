@@ -5,7 +5,7 @@ Unit tests for Models (Q06 Pre-add Validation) and Services (Q06 Search Before A
 import pytest
 from pydantic import ValidationError
 from backend.database import get_connection, init_db
-from backend.models import QuestionCreate, QuizCreate
+from backend.models import QuestionCreate, QuestionUpdate, QuizCreate
 from backend.services.question_service import QuestionService
 from backend.services.quiz_service import QuizService
 
@@ -62,6 +62,17 @@ def test_q06_pre_add_validation_mcq_answer_must_be_in_options():
             correct_answer="Yellow",
         )
     assert "must be present in the options" in str(exc.value)
+
+
+def test_q06_pre_add_validation_question_update_empty():
+    """FR-Q2: QuestionUpdate rejects whitespace/empty fields."""
+    with pytest.raises(ValidationError) as exc:
+        QuestionUpdate(question_text="   ")
+    assert "cannot be empty" in str(exc.value)
+
+    with pytest.raises(ValidationError) as exc2:
+        QuestionUpdate(correct_answer="   ")
+    assert "cannot be empty" in str(exc2.value)
 
 
 # ========================================================

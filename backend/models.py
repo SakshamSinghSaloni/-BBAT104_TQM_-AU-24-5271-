@@ -117,12 +117,34 @@ class QuestionCreate(BaseModel):
 
 
 class QuestionUpdate(BaseModel):
-    """Payload for editing a question."""
+    """Payload for editing a question (with Q06 Pre-add Validation)."""
     question_text: Optional[str] = Field(None, max_length=2000)
     options: Optional[List[str]] = None
     correct_answer: Optional[str] = Field(None, max_length=500)
     points: Optional[int] = Field(None, ge=1, le=100)
     order_index: Optional[int] = Field(None, ge=0)
+
+    @field_validator("question_text", "correct_answer")
+    @classmethod
+    def validate_non_empty(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None:
+            cleaned = v.strip()
+            if not cleaned:
+                raise ValueError("Field cannot be empty or whitespace only.")
+            return cleaned
+        return v
+
+    @field_validator("options")
+    @classmethod
+    def validate_mcq_options(cls, v: Optional[List[str]]) -> Optional[List[str]]:
+        if v is not None:
+            cleaned_options = [opt.strip() for opt in v if opt.strip()]
+            if len(cleaned_options) < 2:
+                raise ValueError("Multiple choice questions must have at least 2 non-empty options.")
+            if len(cleaned_options) > 6:
+                raise ValueError("Multiple choice questions cannot exceed 6 options.")
+            return cleaned_options
+        return v
 
 
 class QuestionResponse(BaseModel):
