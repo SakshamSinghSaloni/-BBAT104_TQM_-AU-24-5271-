@@ -4,11 +4,12 @@ PySide6 View for Quiz CRUD operations.
 Enforces:
 - Q06 Feature 4: Confirmation Dialogs before deleting quizzes
 - Q06 Feature 3: Surface search/duplicate warning notices to the user
+- Q06 Feature 2: Pre-add validation and input sanitization
 """
 
 from __future__ import annotations
 
-from typing import Callable, Optional
+from typing import Optional
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QHBoxLayout,
@@ -34,8 +35,9 @@ class QuizView(QWidget):
     def __init__(self, api_client: APIClient, parent: Optional[QWidget] = None):
         super().__init__(parent)
         self.api_client = api_client
+        self.editing_quiz_id: Optional[int] = None
         self._setup_ui()
-        self.refresh_quizzes()
+        self.refresh_quizzes(silent=True)
 
     def _setup_ui(self):
         layout = QHBoxLayout(self)
@@ -44,8 +46,8 @@ class QuizView(QWidget):
         form_panel = QWidget()
         form_layout = QVBoxLayout(form_panel)
 
-        form_title = QLabel("<h2>Manage Quizzes</h2>")
-        form_layout.addWidget(form_title)
+        self.form_header = QLabel("<h2>Manage Quizzes</h2>")
+        form_layout.addWidget(self.form_header)
 
         form_layout.addWidget(QLabel("<b>Quiz Title:</b>"))
         self.title_input = QLineEdit()
@@ -59,10 +61,10 @@ class QuizView(QWidget):
         form_layout.addWidget(self.desc_input)
 
         btn_layout = QHBoxLayout()
-        self.create_btn = QPushButton("Create Quiz")
-        self.create_btn.setStyleSheet("background-color: #2ECC71; color: white; font-weight: bold; padding: 6px;")
-        self.create_btn.clicked.connect(self._on_create_quiz)
-        btn_layout.addWidget(self.create_btn)
+        self.save_btn = QPushButton("Create Quiz")
+        self.save_btn.setStyleSheet("background-color: #2ECC71; color: white; font-weight: bold; padding: 6px;")
+        self.save_btn.clicked.connect(self._on_save_quiz)
+        btn_layout.addWidget(self.save_btn)
 
         self.clear_btn = QPushButton("Clear Form")
         self.clear_btn.clicked.connect(self._clear_form)
@@ -78,7 +80,7 @@ class QuizView(QWidget):
         table_header_layout = QHBoxLayout()
         table_header_layout.addWidget(QLabel("<h3>Existing Quizzes</h3>"))
         refresh_btn = QPushButton("🔄 Refresh")
-        refresh_btn.clicked.connect(self.refresh_quizzes)
+        refresh_btn.clicked.connect(lambda: self.refresh_quizzes(silent=False))
         table_header_layout.addWidget(refresh_btn)
         table_layout.addLayout(table_header_layout)
 
@@ -97,6 +99,11 @@ class QuizView(QWidget):
         self.manage_questions_btn.clicked.connect(self._on_manage_questions)
         action_layout.addWidget(self.manage_questions_btn)
 
+        self.edit_btn = QPushButton("✏️ Edit Selected")
+        self.edit_btn.setStyleSheet("background-color: #F39C12; color: white; font-weight: bold; padding: 6px;")
+        self.edit_btn.clicked.connect(self._on_edit_quiz)
+        action_layout.addWidget(self.edit_btn)
+
         self.delete_btn = QPushButton("🗑️ Delete Selected Quiz")
         self.delete_btn.setStyleSheet("background-color: #E74C3C; color: white; font-weight: bold; padding: 6px;")
         self.delete_btn.clicked.connect(self._on_delete_quiz)
@@ -107,10 +114,14 @@ class QuizView(QWidget):
         layout.addWidget(table_panel, 2)
 
     def _clear_form(self):
+        self.editing_quiz_id = None
         self.title_input.clear()
         self.desc_input.clear()
+        self.save_btn.setText("Create Quiz")
+        self.save_btn.setStyleSheet("background-color: #2ECC71; color: white; font-weight: bold; padding: 6px;")
+        self.form_header.setText("<h2>Manage Quizzes</h2>")
 
-    def refresh_quizzes(self):
+    def refresh_quizzes(self, silent: bool = True):
         """Fetch and populate quiz list from backend."""
         try:
             quizzes = self.api_client.list_quizzes()
@@ -123,23 +134,53 @@ class QuizView(QWidget):
                 self.table.setItem(row_idx, 3, QTableWidgetItem(created_display))
                 self.table.setItem(row_idx, 4, QTableWidgetItem("Double-click to open"))
         except Exception as exc:
-            # Backend may not be running yet
-            pass
+            self.table.setRowCount(0)
+            if not silent:
+                QMessageBox.warning(
+                    self,
+                    "Connection Error",
+                    f"Could not connect to backend:\n{exc}\n\nMake sure the backend is running at {self.api_client.base_url}.",
+                )
 
-    def _on_create_quiz(self):
+    def _on_edit_quiz(self):
+        """Load selected quiz details into the form for editing (FR-03)."""
+        quiz_id = self._get_selected_quiz_id()
+        if not quiz_id:
+            QMessageBox.warning(self, "Selection Required", "Please select a quiz to edit.")
+            return
+
+        try:
+            quiz = self.api_client.get_quiz(quiz_id)
+            self.editing_quiz_id = quiz_id
+            self.title_input.setText(quiz["title"])
+            self.desc_input.setPlainText(quiz.get("description") or "")
+            self.save_btn.setText("💾 Save Quiz Changes")
+            self.save_btn.setStyleSheet("background-color: #F39C12; color: white; font-weight: bold; padding: 6px;")
+            self.form_header.setText(f"<h2>Edit Quiz #{quiz_id}</h2>")
+        except Exception as exc:
+            QMessageBox.critical(self, "Error", f"Failed to retrieve quiz details: {exc}")
+
+    def _on_save_quiz(self):
         title = self.title_input.text().strip()
         desc = self.desc_input.toPlainText().strip() or None
 
-        # Pre-add Validation warning on client before sending
+        # Pre-add Validation check on client before sending
         if not title:
             QMessageBox.warning(self, "Validation Error (Q06)", "Quiz title cannot be empty or blank!")
             return
 
         try:
-            res = self.api_client.create_quiz(title=title, description=desc)
-            QMessageBox.information(self, "Success", f"Quiz '{title}' created successfully with ID #{res['id']}!")
+            if self.editing_quiz_id is not None:
+                # FR-03: Update existing quiz
+                res = self.api_client.update_quiz(self.editing_quiz_id, title=title, description=desc)
+                QMessageBox.information(self, "Success", f"Quiz #{res['id']} updated successfully!")
+            else:
+                # FR-01: Create new quiz
+                res = self.api_client.create_quiz(title=title, description=desc)
+                QMessageBox.information(self, "Success", f"Quiz '{title}' created successfully with ID #{res['id']}!")
+
             self._clear_form()
-            self.refresh_quizzes()
+            self.refresh_quizzes(silent=False)
         except Exception as exc:
             err_msg = str(exc)
             # Friendly duplicate warning on 409 Conflict
@@ -151,7 +192,8 @@ class QuizView(QWidget):
                     "Duplicate quiz entries are blocked to protect data integrity.",
                 )
             else:
-                QMessageBox.critical(self, "Error", f"Failed to create quiz: {exc}")
+                action = "update" if self.editing_quiz_id else "create"
+                QMessageBox.critical(self, "Error", f"Failed to {action} quiz: {exc}")
 
     def _get_selected_quiz_id(self) -> Optional[int]:
         selected_rows = self.table.selectionModel().selectedRows()
@@ -199,6 +241,8 @@ class QuizView(QWidget):
             try:
                 self.api_client.delete_quiz(quiz_id)
                 QMessageBox.information(self, "Deleted", "Quiz deleted successfully.")
-                self.refresh_quizzes()
+                if self.editing_quiz_id == quiz_id:
+                    self._clear_form()
+                self.refresh_quizzes(silent=False)
             except Exception as exc:
                 QMessageBox.critical(self, "Error", f"Failed to delete quiz: {exc}")

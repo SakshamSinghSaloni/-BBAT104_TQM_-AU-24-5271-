@@ -4,6 +4,7 @@ PySide6 View for Question CRUD operations inside a selected Quiz.
 Enforces:
 - Q06 Feature 4: Confirmation Dialogs before deleting questions
 - Q06 Feature 2: Client-side and server-side pre-add validation for MCQ options
+- Q06 Feature 3: Search Before Add duplicate detection
 """
 
 from __future__ import annotations
@@ -38,18 +39,20 @@ class QuestionView(QWidget):
         self.api_client = api_client
         self.current_quiz_id: Optional[int] = None
         self.current_quiz_title: str = ""
+        self.editing_question_id: Optional[int] = None
         self._setup_ui()
 
     def set_active_quiz(self, quiz_id: int, quiz_title: str):
         self.current_quiz_id = quiz_id
         self.current_quiz_title = quiz_title
+        self._clear_form()
         self.header_label.setText(f"<h2>Questions for Quiz #{quiz_id}: {quiz_title}</h2>")
-        self.refresh_questions()
+        self.refresh_questions(silent=True)
 
     def _setup_ui(self):
         layout = QHBoxLayout(self)
 
-        # Left panel: Add Question Form
+        # Left panel: Add / Edit Question Form
         form_panel = QWidget()
         form_layout = QVBoxLayout(form_panel)
 
@@ -120,10 +123,10 @@ class QuestionView(QWidget):
         form_layout.addLayout(points_layout)
 
         btn_layout = QHBoxLayout()
-        self.add_btn = QPushButton("➕ Add Question")
-        self.add_btn.setStyleSheet("background-color: #2ECC71; color: white; font-weight: bold; padding: 6px;")
-        self.add_btn.clicked.connect(self._on_add_question)
-        btn_layout.addWidget(self.add_btn)
+        self.save_btn = QPushButton("➕ Add Question")
+        self.save_btn.setStyleSheet("background-color: #2ECC71; color: white; font-weight: bold; padding: 6px;")
+        self.save_btn.clicked.connect(self._on_save_question)
+        btn_layout.addWidget(self.save_btn)
 
         self.clear_btn = QPushButton("Clear")
         self.clear_btn.clicked.connect(self._clear_form)
@@ -139,7 +142,7 @@ class QuestionView(QWidget):
         table_header = QHBoxLayout()
         table_header.addWidget(QLabel("<h3>Quiz Questions List</h3>"))
         refresh_btn = QPushButton("🔄 Refresh")
-        refresh_btn.clicked.connect(self.refresh_questions)
+        refresh_btn.clicked.connect(lambda: self.refresh_questions(silent=False))
         table_header.addWidget(refresh_btn)
         table_layout.addLayout(table_header)
 
@@ -150,10 +153,18 @@ class QuestionView(QWidget):
         self.table.setSelectionBehavior(QTableWidget.SelectRows)
         table_layout.addWidget(self.table)
 
+        action_layout = QHBoxLayout()
+        self.edit_btn = QPushButton("✏️ Edit Selected Question")
+        self.edit_btn.setStyleSheet("background-color: #F39C12; color: white; font-weight: bold; padding: 6px;")
+        self.edit_btn.clicked.connect(self._on_edit_question)
+        action_layout.addWidget(self.edit_btn)
+
         self.delete_btn = QPushButton("🗑️ Delete Selected Question")
         self.delete_btn.setStyleSheet("background-color: #E74C3C; color: white; font-weight: bold; padding: 6px;")
         self.delete_btn.clicked.connect(self._on_delete_question)
-        table_layout.addWidget(self.delete_btn)
+        action_layout.addWidget(self.delete_btn)
+
+        table_layout.addLayout(action_layout)
 
         layout.addWidget(form_panel, 1)
         layout.addWidget(table_panel, 2)
@@ -178,13 +189,21 @@ class QuestionView(QWidget):
             self.answer_input.setPlaceholderText("Enter the exact correct answer/phrase...")
 
     def _clear_form(self):
+        self.editing_question_id = None
         self.text_input.clear()
         self.options_input.clear()
         self.answer_input.clear()
         self.radio_true.setChecked(True)
         self.points_spin.setValue(1)
+        self.type_combo.setEnabled(True)
+        self.save_btn.setText("➕ Add Question")
+        self.save_btn.setStyleSheet("background-color: #2ECC71; color: white; font-weight: bold; padding: 6px;")
+        if self.current_quiz_id:
+            self.header_label.setText(f"<h2>Questions for Quiz #{self.current_quiz_id}: {self.current_quiz_title}</h2>")
+        else:
+            self.header_label.setText("<h2>Questions Management</h2><p><i>Select a quiz from the Quizzes tab first.</i></p>")
 
-    def refresh_questions(self):
+    def refresh_questions(self, silent: bool = True):
         if not self.current_quiz_id:
             return
         try:
@@ -196,10 +215,52 @@ class QuestionView(QWidget):
                 self.table.setItem(row_idx, 2, QTableWidgetItem(q["question_type"]))
                 self.table.setItem(row_idx, 3, QTableWidgetItem(q["correct_answer"]))
                 self.table.setItem(row_idx, 4, QTableWidgetItem(str(q["points"])))
-        except Exception:
-            pass
+        except Exception as exc:
+            self.table.setRowCount(0)
+            if not silent:
+                QMessageBox.warning(
+                    self,
+                    "Connection Error",
+                    f"Could not load questions from backend:\n{exc}",
+                )
 
-    def _on_add_question(self):
+    def _on_edit_question(self):
+        """Load selected question details into form for editing (FR-07)."""
+        selected_rows = self.table.selectionModel().selectedRows()
+        if not selected_rows:
+            QMessageBox.warning(self, "Selection Required", "Please select a question to edit.")
+            return
+
+        row = selected_rows[0].row()
+        q_id = int(self.table.item(row, 0).text())
+
+        try:
+            q = self.api_client.get_question(q_id)
+            self.editing_question_id = q_id
+            self.text_input.setPlainText(q["question_text"])
+            self.type_combo.setCurrentText(q["question_type"])
+            self.type_combo.setEnabled(False)  # Keep question type immutable on update
+
+            if q["question_type"] == "mcq":
+                opts = q.get("options") or []
+                self.options_input.setText(", ".join(opts))
+                self.answer_input.setText(q["correct_answer"])
+            elif q["question_type"] == "true_false":
+                if q["correct_answer"].strip().lower() == "true":
+                    self.radio_true.setChecked(True)
+                else:
+                    self.radio_false.setChecked(True)
+            elif q["question_type"] == "short_answer":
+                self.answer_input.setText(q["correct_answer"])
+
+            self.points_spin.setValue(q.get("points", 1))
+            self.save_btn.setText("💾 Save Question Changes")
+            self.save_btn.setStyleSheet("background-color: #F39C12; color: white; font-weight: bold; padding: 6px;")
+            self.header_label.setText(f"<h2>Edit Question #{q_id}</h2>")
+        except Exception as exc:
+            QMessageBox.critical(self, "Error", f"Failed to retrieve question details: {exc}")
+
+    def _on_save_question(self):
         if not self.current_quiz_id:
             QMessageBox.warning(self, "No Quiz Selected", "Please select a quiz first from the Quizzes tab.")
             return
@@ -246,17 +307,30 @@ class QuestionView(QWidget):
             options = None
 
         try:
-            res = self.api_client.add_question(
-                quiz_id=self.current_quiz_id,
-                question_text=text,
-                question_type=q_type,
-                options=options,
-                correct_answer=answer,
-                points=points,
-            )
-            QMessageBox.information(self, "Success", f"Question added successfully with ID #{res['id']}!")
+            if self.editing_question_id is not None:
+                # FR-07: Update existing question
+                res = self.api_client.update_question(
+                    question_id=self.editing_question_id,
+                    question_text=text,
+                    options=options,
+                    correct_answer=answer,
+                    points=points,
+                )
+                QMessageBox.information(self, "Success", f"Question #{res['id']} updated successfully!")
+            else:
+                # FR-05: Add new question
+                res = self.api_client.add_question(
+                    quiz_id=self.current_quiz_id,
+                    question_text=text,
+                    question_type=q_type,
+                    options=options,
+                    correct_answer=answer,
+                    points=points,
+                )
+                QMessageBox.information(self, "Success", f"Question added successfully with ID #{res['id']}!")
+
             self._clear_form()
-            self.refresh_questions()
+            self.refresh_questions(silent=False)
         except Exception as exc:
             err_msg = str(exc)
             if "409" in err_msg or "already exists" in err_msg:
@@ -267,7 +341,8 @@ class QuestionView(QWidget):
                     "Duplicate questions are blocked to ensure quiz integrity.",
                 )
             else:
-                QMessageBox.critical(self, "Error", f"Failed to add question: {exc}")
+                action = "update" if self.editing_question_id else "add"
+                QMessageBox.critical(self, "Error", f"Failed to {action} question: {exc}")
 
     def _on_delete_question(self):
         """Enforces Q06 Feature 4: Confirmation Dialogs."""
@@ -293,6 +368,8 @@ class QuestionView(QWidget):
             try:
                 self.api_client.delete_question(q_id)
                 QMessageBox.information(self, "Deleted", "Question deleted successfully.")
-                self.refresh_questions()
+                if self.editing_question_id == q_id:
+                    self._clear_form()
+                self.refresh_questions(silent=False)
             except Exception as exc:
                 QMessageBox.critical(self, "Error", f"Failed to delete question: {exc}")
