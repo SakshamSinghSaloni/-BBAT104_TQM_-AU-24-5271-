@@ -242,8 +242,8 @@ The system communicates over HTTP REST APIs, with the backend serving as the sin
 | FR-04 Delete quiz | `backend/api/quizzes.py`, `apps/teacher/views/quiz_view.py` | `tests/test_api.py::test_api_delete_quiz` | ✅ Implemented & Tested |
 | FR-05 Add question | `backend/api/questions.py`, `backend/services/question_service.py` | `tests/test_api.py::test_api_add_and_list_question` | ✅ Implemented & Tested |
 | FR-06 List questions | `backend/api/questions.py` | `tests/test_api.py::test_api_add_and_list_question` | ✅ Implemented & Tested |
-| FR-07 Update question | `backend/api/questions.py` | `backend/repositories/question_repo.py` | ✅ Implemented & Tested |
-| FR-08 Delete question | `backend/api/questions.py`, `apps/teacher/views/question_view.py` | `backend/api/questions.py` | ✅ Implemented & Tested |
+| FR-07 Update question | `backend/api/questions.py` | `tests/test_api.py::test_api_update_question` | ✅ Implemented & Tested |
+| FR-08 Delete question | `backend/api/questions.py`, `apps/teacher/views/question_view.py` | `tests/test_api.py::test_api_delete_question` | ✅ Implemented & Tested |
 | FR-Q1 Unique ID Constraints | `backend/database.py` | `tests/test_database.py` (all tests) | ✅ Implemented & Tested |
 | FR-Q2 Pre-add Validation | `backend/models.py`, `backend/services/*` | `tests/test_services.py`, `tests/test_api.py` | ✅ Implemented & Tested |
 | FR-Q3 Search Before Add | `backend/services/*`, `backend/repositories/*` | `tests/test_services.py` | ✅ Implemented & Tested |

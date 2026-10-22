@@ -9,10 +9,10 @@
 
 | Deliverable | Description | Status |
 |-------------|------------|--------|
-| GitHub repository | Public repository `BBAT104_TQM_[AU-24-5271]` initialized with structured layout | Planned |
-| System Architecture Flowchart | Mermaid diagram showing client-server architecture, layers, and communication | Planned |
-| SRS Document | Functional and non-functional requirements with IDs, acceptance criteria, traceability | Planned |
-| Scope Definition | This document — clear boundaries for each review phase | Planned |
+| GitHub repository | Public repository `BBAT104_TQM_[AU-24-5271]` initialized with structured layout | ✅ Complete |
+| System Architecture Flowchart | Mermaid diagram showing client-server architecture, layers, and communication | ✅ Complete |
+| SRS Document | Functional and non-functional requirements with IDs, acceptance criteria, traceability | ✅ Complete |
+| Scope Definition | This document — clear boundaries for each review phase | ✅ Complete |
 
 ---
 
@@ -103,7 +103,7 @@ This section documents what constitutes a "duplicate" for each entity, supportin
 
 | Entity | Duplicate Condition | Enforcement |
 |--------|-------------------|-------------|
-| Quiz | No strict title uniqueness — teachers may create quizzes with similar titles. Exact duplicate detection is advisory. | Service-layer advisory warning (not blocking) |
+| Quiz | Identical quiz title (case-insensitive, trimmed). Duplicate quiz titles are blocked to preserve data integrity and eliminate duplicate entries. | Database UNIQUE constraint + Service-layer Search Before Add check (blocks creation & update) |
 | Question | Same quiz_id + identical question_text. Two questions with the same text in different quizzes are allowed. | Service-layer check before insert |
 | Session | Same session_code (must be globally unique). Same quiz_id can have multiple sessions. | Database UNIQUE constraint |
 | Participant | Same session_id + student_identifier. A student can participate in multiple different sessions. | Database UNIQUE constraint + service check |

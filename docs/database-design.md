@@ -72,7 +72,7 @@ erDiagram
 | Column | Type | Constraints | Notes |
 |--------|------|-------------|-------|
 | id | INTEGER | PRIMARY KEY AUTOINCREMENT | Unique quiz identifier |
-| title | TEXT | NOT NULL | Quiz title; not required to be globally unique |
+| title | TEXT | NOT NULL, UNIQUE | Quiz title; globally unique to prevent duplicate quiz entries (Q06) |
 | description | TEXT | — | Optional quiz description |
 | created_at | TEXT | NOT NULL | ISO 8601 timestamp |
 | updated_at | TEXT | NOT NULL | ISO 8601 timestamp, updated on modification |

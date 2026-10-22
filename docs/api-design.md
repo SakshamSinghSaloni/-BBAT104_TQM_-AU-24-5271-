@@ -23,7 +23,7 @@
   - `title` max length: 200 characters.
   - `description` is optional; max length: 1000 characters.
 - **Duplicate check (Q06: Search Before Add):**
-  - Advisory: warn if a quiz with an identical title already exists (does not block creation).
+  - Strict: checks if a quiz with identical title already exists (case-insensitive). Blocks creation and returns 409 Conflict.
 - **Success response:** `201 Created`
   ```json
   {
@@ -36,6 +36,7 @@
   }
   ```
 - **Error responses:**
+  - `409 Conflict` — duplicate quiz title detected (Q06: Search Before Add).
   - `422 Unprocessable Entity` — validation failure (missing/blank title).
 
 ---
@@ -82,6 +83,7 @@
 - **Response:** `200 OK` with updated quiz object.
 - **Errors:**
   - `404 Not Found` — quiz does not exist.
+  - `409 Conflict` — new title duplicates an existing quiz title (Q06: Search Before Add).
   - `422 Unprocessable Entity` — validation failure.
 
 ---
@@ -121,10 +123,11 @@
   - For `mcq`: `correct_answer` must match one of the `options`.
   - `points` must be a positive integer (default: 1).
 - **Duplicate check (Q06: Search Before Add):**
-  - Check if a question with identical `question_text` already exists in the same quiz. Return a warning but allow creation.
+  - Strict: checks if a question with identical `question_text` already exists in the same quiz. Blocks creation and returns 409 Conflict.
 - **Response:** `201 Created` with question object.
 - **Errors:**
   - `404 Not Found` — parent quiz does not exist.
+  - `409 Conflict` — duplicate question in quiz (Q06: Search Before Add).
   - `422 Unprocessable Entity` — validation failure.
 
 ---
@@ -148,7 +151,10 @@
 - **Request body:** Same fields as creation (all optional for partial update).
 - **Validation:** Same rules as creation for provided fields.
 - **Response:** `200 OK` with updated question.
-- **Errors:** `404`, `422`.
+- **Errors:**
+  - `404 Not Found` — question does not exist.
+  - `409 Conflict` — updated text duplicates another question in the quiz or answer not in options (Q06: Search Before Add / Pre-add Validation).
+  - `422 Unprocessable Entity` — invalid data formats.
 
 ---
 
