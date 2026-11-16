@@ -160,3 +160,53 @@ class QuestionResponse(BaseModel):
     points: int
     order_index: int
     created_at: str
+
+
+
+# ==========================================
+# USER & AUTH SCHEMAS
+# ==========================================
+
+class UserCreate(BaseModel):
+    """Payload for registering a new teacher account (with Q06 Pre-add Validation)."""
+    email: str = Field(..., max_length=255, description="Unique email address")
+    password: str = Field(..., min_length=6, max_length=128, description="Account password")
+    name: str = Field(..., min_length=1, max_length=200, description="Display name")
+
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, v: str) -> str:
+        cleaned = v.strip().lower()
+        if "@" not in cleaned or "." not in cleaned.split("@")[-1]:
+            raise ValueError("Invalid email format.")
+        return cleaned
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v: str) -> str:
+        cleaned = v.strip()
+        if not cleaned:
+            raise ValueError("Name cannot be blank.")
+        return cleaned
+
+
+class UserLogin(BaseModel):
+    """Payload for logging into a teacher account."""
+    email: str
+    password: str
+
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, v: str) -> str:
+        return v.strip().lower()
+
+
+class UserResponse(BaseModel):
+    """User representation returned on successful authentication."""
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    email: str
+    name: str
+    role: str
+    created_at: str

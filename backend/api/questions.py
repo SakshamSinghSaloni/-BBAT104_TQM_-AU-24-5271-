@@ -4,9 +4,9 @@ FastAPI route handlers for Question CRUD operations.
 
 from __future__ import annotations
 
-import sqlite3
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
 
 from backend.database import get_db
 from backend.models import QuestionCreate, QuestionResponse, QuestionUpdate
@@ -21,10 +21,10 @@ router = APIRouter(tags=["Questions"])
     status_code=status.HTTP_201_CREATED,
 )
 def add_question(
-    quiz_id: int, q_in: QuestionCreate, conn: sqlite3.Connection = Depends(get_db)
+    quiz_id: int, q_in: QuestionCreate, db: Session = Depends(get_db)
 ):
     """Add a question to a quiz with Q06 Pre-add Validation and Search Before Add."""
-    service = QuestionService(conn)
+    service = QuestionService(db)
     try:
         return service.add_question(
             quiz_id=quiz_id,
@@ -42,9 +42,9 @@ def add_question(
 
 
 @router.get("/api/quizzes/{quiz_id}/questions", response_model=List[QuestionResponse])
-def list_questions(quiz_id: int, conn: sqlite3.Connection = Depends(get_db)):
+def list_questions(quiz_id: int, db: Session = Depends(get_db)):
     """List all questions for a given quiz."""
-    service = QuestionService(conn)
+    service = QuestionService(db)
     try:
         return service.list_questions(quiz_id)
     except KeyError as exc:
@@ -52,24 +52,24 @@ def list_questions(quiz_id: int, conn: sqlite3.Connection = Depends(get_db)):
 
 
 @router.get("/api/questions/{question_id}", response_model=QuestionResponse)
-def get_question(question_id: int, conn: sqlite3.Connection = Depends(get_db)):
+def get_question(question_id: int, db: Session = Depends(get_db)):
     """Retrieve details of a single question."""
-    service = QuestionService(conn)
+    service = QuestionService(db)
     question = service.get_question(question_id)
     if not question:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Question with ID {question_id} not found."
+            detail=f"Question with ID {question_id} not found.",
         )
     return question
 
 
 @router.put("/api/questions/{question_id}", response_model=QuestionResponse)
 def update_question(
-    question_id: int, q_in: QuestionUpdate, conn: sqlite3.Connection = Depends(get_db)
+    question_id: int, q_in: QuestionUpdate, db: Session = Depends(get_db)
 ):
     """Update a question."""
-    service = QuestionService(conn)
+    service = QuestionService(db)
     try:
         updated = service.update_question(
             question_id=question_id,
@@ -84,19 +84,19 @@ def update_question(
     if not updated:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Question with ID {question_id} not found."
+            detail=f"Question with ID {question_id} not found.",
         )
     return updated
 
 
 @router.delete("/api/questions/{question_id}", status_code=status.HTTP_200_OK)
-def delete_question(question_id: int, conn: sqlite3.Connection = Depends(get_db)):
+def delete_question(question_id: int, db: Session = Depends(get_db)):
     """Delete a question."""
-    service = QuestionService(conn)
+    service = QuestionService(db)
     success = service.delete_question(question_id)
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Question with ID {question_id} not found."
+            detail=f"Question with ID {question_id} not found.",
         )
     return {"message": f"Question {question_id} deleted successfully."}

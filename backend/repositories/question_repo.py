@@ -1,18 +1,42 @@
 """
-Data access repository for Question entities.
+SQLAlchemy Data Access Repository for Question entities.
 """
 
 from __future__ import annotations
 
 import json
-import sqlite3
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
+from sqlalchemy import func, select
+from sqlalchemy.orm import Session
+
+from backend.db_models import Question
 
 
 class QuestionRepository:
-    def __init__(self, conn: sqlite3.Connection):
-        self.conn = conn
+    def __init__(self, db: Session):
+        self.db = db
+
+    def _to_dict(self, q: Question) -> Dict[str, Any]:
+        """Convert a Question ORM model instance to dictionary representation."""
+        opts = None
+        if q.options_json:
+            try:
+                opts = json.loads(q.options_json)
+            except Exception:
+                opts = None
+
+        return {
+            "id": q.id,
+            "quiz_id": q.quiz_id,
+            "question_text": q.question_text,
+            "question_type": q.question_type,
+            "options": opts,
+            "correct_answer": q.correct_answer,
+            "points": q.points,
+            "order_index": q.order_index,
+            "created_at": q.created_at,
+        }
 
     def create(
         self,
@@ -24,82 +48,48 @@ class QuestionRepository:
         points: int = 1,
         order_index: int = 0,
     ) -> Dict[str, Any]:
+        now = datetime.now(timezone.utc).isoformat()
         options_json = json.dumps(options) if options is not None else None
-        now = datetime.now().isoformat()
 
-        cursor = self.conn.cursor()
-        cursor.execute(
-            """
-            INSERT INTO questions (
-                quiz_id, question_text, question_type, options_json,
-                correct_answer, points, order_index, created_at
-            )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                quiz_id,
-                question_text,
-                question_type,
-                options_json,
-                correct_answer,
-                points,
-                order_index,
-                now,
-            ),
+        question = Question(
+            quiz_id=quiz_id,
+            question_text=question_text.strip(),
+            question_type=question_type,
+            options_json=options_json,
+            correct_answer=correct_answer.strip(),
+            points=points,
+            order_index=order_index,
+            created_at=now,
         )
-        self.conn.commit()
-        return self.get_by_id(cursor.lastrowid)  # type: ignore
+        self.db.add(question)
+        self.db.commit()
+        self.db.refresh(question)
+        return self._to_dict(question)
 
     def get_by_id(self, question_id: int) -> Optional[Dict[str, Any]]:
-        cursor = self.conn.cursor()
-        cursor.execute(
-            """
-            SELECT id, quiz_id, question_text, question_type, options_json,
-                   correct_answer, points, order_index, created_at
-            FROM questions
-            WHERE id = ?
-            """,
-            (question_id,),
-        )
-        row = cursor.fetchone()
-        if not row:
+        question = self.db.get(Question, question_id)
+        if not question:
             return None
-
-        data = dict(row)
-        data["options"] = json.loads(data.pop("options_json")) if data.get("options_json") else None
-        return data
+        return self._to_dict(question)
 
     def list_by_quiz(self, quiz_id: int) -> List[Dict[str, Any]]:
-        cursor = self.conn.cursor()
-        cursor.execute(
-            """
-            SELECT id, quiz_id, question_text, question_type, options_json,
-                   correct_answer, points, order_index, created_at
-            FROM questions
-            WHERE quiz_id = ?
-            ORDER BY order_index ASC, id ASC
-            """,
-            (quiz_id,),
+        stmt = (
+            select(Question)
+            .where(Question.quiz_id == quiz_id)
+            .order_by(Question.order_index.asc(), Question.id.asc())
         )
-        questions = []
-        for row in cursor.fetchall():
-            data = dict(row)
-            data["options"] = json.loads(data.pop("options_json")) if data.get("options_json") else None
-            questions.append(data)
-        return questions
+        questions = self.db.scalars(stmt).all()
+        return [self._to_dict(q) for q in questions]
 
     def find_duplicate_in_quiz(self, quiz_id: int, question_text: str) -> List[Dict[str, Any]]:
         """Used for Q06 Feature 3: Search Before Add."""
-        cursor = self.conn.cursor()
-        cursor.execute(
-            """
-            SELECT id, quiz_id, question_text
-            FROM questions
-            WHERE quiz_id = ? AND LOWER(TRIM(question_text)) = LOWER(TRIM(?))
-            """,
-            (quiz_id, question_text),
+        clean_text = question_text.strip()
+        stmt = select(Question).where(
+            Question.quiz_id == quiz_id,
+            func.lower(func.trim(Question.question_text)) == func.lower(clean_text),
         )
-        return [dict(row) for row in cursor.fetchall()]
+        questions = self.db.scalars(stmt).all()
+        return [self._to_dict(q) for q in questions]
 
     def update(
         self,
@@ -110,32 +100,29 @@ class QuestionRepository:
         points: Optional[int] = None,
         order_index: Optional[int] = None,
     ) -> Optional[Dict[str, Any]]:
-        existing = self.get_by_id(question_id)
-        if not existing:
+        question = self.db.get(Question, question_id)
+        if not question:
             return None
 
-        new_text = question_text if question_text is not None else existing["question_text"]
-        new_opts = options if options is not None else existing["options"]
-        new_opts_json = json.dumps(new_opts) if new_opts is not None else None
-        new_ans = correct_answer if correct_answer is not None else existing["correct_answer"]
-        new_pts = points if points is not None else existing["points"]
-        new_idx = order_index if order_index is not None else existing["order_index"]
+        if question_text is not None:
+            question.question_text = question_text.strip()
+        if options is not None:
+            question.options_json = json.dumps(options)
+        if correct_answer is not None:
+            question.correct_answer = correct_answer.strip()
+        if points is not None:
+            question.points = points
+        if order_index is not None:
+            question.order_index = order_index
 
-        cursor = self.conn.cursor()
-        cursor.execute(
-            """
-            UPDATE questions
-            SET question_text = ?, options_json = ?, correct_answer = ?,
-                points = ?, order_index = ?
-            WHERE id = ?
-            """,
-            (new_text, new_opts_json, new_ans, new_pts, new_idx, question_id),
-        )
-        self.conn.commit()
-        return self.get_by_id(question_id)
+        self.db.commit()
+        self.db.refresh(question)
+        return self._to_dict(question)
 
     def delete(self, question_id: int) -> bool:
-        cursor = self.conn.cursor()
-        cursor.execute("DELETE FROM questions WHERE id = ?", (question_id,))
-        self.conn.commit()
-        return cursor.rowcount > 0
+        question = self.db.get(Question, question_id)
+        if not question:
+            return False
+        self.db.delete(question)
+        self.db.commit()
+        return True

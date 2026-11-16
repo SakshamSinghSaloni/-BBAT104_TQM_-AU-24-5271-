@@ -8,16 +8,17 @@ Enforces:
 
 from __future__ import annotations
 
-import sqlite3
 from typing import Any, Dict, List, Optional
+from sqlalchemy.orm import Session
+
 from backend.repositories.question_repo import QuestionRepository
 from backend.repositories.quiz_repo import QuizRepository
 
 
 class QuestionService:
-    def __init__(self, conn: sqlite3.Connection):
-        self.question_repo = QuestionRepository(conn)
-        self.quiz_repo = QuizRepository(conn)
+    def __init__(self, db: Session | Any):
+        self.question_repo = QuestionRepository(db)
+        self.quiz_repo = QuizRepository(db)
 
     def add_question(
         self,

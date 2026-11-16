@@ -4,7 +4,10 @@ Integration test suite for the REST API layer and Q06 features via FastAPI TestC
 
 import pytest
 from fastapi.testclient import TestClient
-from backend.database import get_connection, get_db, init_db
+from sqlalchemy import create_engine, event
+from sqlalchemy.orm import sessionmaker
+
+from backend.database import get_db, init_db
 from backend.main import app
 
 
@@ -12,14 +15,26 @@ from backend.main import app
 def client(tmp_path):
     """Provides a TestClient using an isolated temporary database."""
     test_db_file = tmp_path / "api_test.db"
-    init_db(test_db_file)
+    test_engine = create_engine(
+        f"sqlite:///{test_db_file.as_posix()}",
+        connect_args={"check_same_thread": False},
+    )
+
+    @event.listens_for(test_engine, "connect")
+    def set_sqlite_pragma(dbapi_connection, connection_record):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON;")
+        cursor.close()
+
+    init_db(test_engine)
+    TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
 
     def override_get_db():
-        conn = get_connection(test_db_file)
+        db = TestingSessionLocal()
         try:
-            yield conn
+            yield db
         finally:
-            conn.close()
+            db.close()
 
     app.dependency_overrides[get_db] = override_get_db
     with TestClient(app) as test_client:

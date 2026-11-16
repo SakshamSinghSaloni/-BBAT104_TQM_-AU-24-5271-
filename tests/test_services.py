@@ -4,7 +4,10 @@ Unit tests for Models (Q06 Pre-add Validation) and Services (Q06 Search Before A
 
 import pytest
 from pydantic import ValidationError
-from backend.database import get_connection, init_db
+from sqlalchemy import create_engine, event
+from sqlalchemy.orm import Session, sessionmaker
+
+from backend.database import init_db
 from backend.models import QuestionCreate, QuestionUpdate, QuizCreate
 from backend.services.question_service import QuestionService
 from backend.services.quiz_service import QuizService
@@ -12,14 +15,26 @@ from backend.services.quiz_service import QuizService
 
 @pytest.fixture
 def service_db(tmp_path):
-    """Provides clean isolated database for service tests."""
+    """Provides clean isolated database session for service tests."""
     db_file = tmp_path / "test_services.db"
-    init_db(db_file)
-    conn = get_connection(db_file)
+    test_engine = create_engine(
+        f"sqlite:///{db_file.as_posix()}",
+        connect_args={"check_same_thread": False},
+    )
+
+    @event.listens_for(test_engine, "connect")
+    def set_sqlite_pragma(dbapi_connection, connection_record):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON;")
+        cursor.close()
+
+    init_db(test_engine)
+    TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
+    session = TestingSessionLocal()
     try:
-        yield conn
+        yield session
     finally:
-        conn.close()
+        session.close()
 
 
 # ========================================================
@@ -79,7 +94,7 @@ def test_q06_pre_add_validation_question_update_empty():
 # Q06 FEATURE 3: SEARCH BEFORE ADD TESTS (Services Layer)
 # ========================================================
 
-def test_q06_search_before_add_quiz_duplicate_detection(service_db):
+def test_q06_search_before_add_quiz_duplicate_detection(service_db: Session):
     """FR-Q3: Search detects matching title and blocks duplicate quiz creation."""
     service = QuizService(service_db)
     q1 = service.create_quiz(title="Database Systems", description="First")
@@ -91,7 +106,7 @@ def test_q06_search_before_add_quiz_duplicate_detection(service_db):
     assert "already exists" in str(exc.value)
 
 
-def test_q06_search_before_add_question_duplicate_in_quiz(service_db):
+def test_q06_search_before_add_question_duplicate_in_quiz(service_db: Session):
     """FR-Q3: Search identifies duplicate question in the same quiz and blocks creation."""
     quiz_svc = QuizService(service_db)
     q_svc = QuestionService(service_db)

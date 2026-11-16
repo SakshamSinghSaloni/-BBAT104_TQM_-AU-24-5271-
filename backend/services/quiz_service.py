@@ -7,14 +7,15 @@ Enforces:
 
 from __future__ import annotations
 
-import sqlite3
 from typing import Any, Dict, List, Optional
+from sqlalchemy.orm import Session
+
 from backend.repositories.quiz_repo import QuizRepository
 
 
 class QuizService:
-    def __init__(self, conn: sqlite3.Connection):
-        self.repo = QuizRepository(conn)
+    def __init__(self, db: Session | Any):
+        self.repo = QuizRepository(db)
 
     def create_quiz(self, title: str, description: Optional[str] = None) -> Dict[str, Any]:
         """

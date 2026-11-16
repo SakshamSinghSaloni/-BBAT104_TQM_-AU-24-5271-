@@ -1,95 +1,86 @@
 """
-Data access repository for Quiz entities.
+SQLAlchemy Data Access Repository for Quiz entities.
 """
 
 from __future__ import annotations
 
-import sqlite3
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
+from sqlalchemy import func, select
+from sqlalchemy.orm import Session
+
+from backend.db_models import Question, Quiz
 
 
 class QuizRepository:
-    def __init__(self, conn: sqlite3.Connection):
-        self.conn = conn
+    def __init__(self, db: Session):
+        self.db = db
+
+    def _to_dict(self, quiz: Quiz) -> Dict[str, Any]:
+        """Convert a Quiz ORM model instance to dictionary representation."""
+        q_count = len(quiz.questions) if quiz.questions is not None else 0
+        return {
+            "id": quiz.id,
+            "title": quiz.title,
+            "description": quiz.description,
+            "created_at": quiz.created_at,
+            "updated_at": quiz.updated_at,
+            "question_count": q_count,
+        }
 
     def create(self, title: str, description: Optional[str] = None) -> Dict[str, Any]:
-        now = datetime.now().isoformat()
-        cursor = self.conn.cursor()
-        cursor.execute(
-            """
-            INSERT INTO quizzes (title, description, created_at, updated_at)
-            VALUES (?, ?, ?, ?)
-            """,
-            (title, description, now, now),
+        now = datetime.now(timezone.utc).isoformat()
+        quiz = Quiz(
+            title=title.strip(),
+            description=description.strip() if description else None,
+            created_at=now,
+            updated_at=now,
         )
-        self.conn.commit()
-        return self.get_by_id(cursor.lastrowid)  # type: ignore
+        self.db.add(quiz)
+        self.db.commit()
+        self.db.refresh(quiz)
+        return self._to_dict(quiz)
 
     def get_by_id(self, quiz_id: int) -> Optional[Dict[str, Any]]:
-        cursor = self.conn.cursor()
-        cursor.execute(
-            """
-            SELECT q.id, q.title, q.description, q.created_at, q.updated_at,
-                   (SELECT COUNT(*) FROM questions WHERE quiz_id = q.id) AS question_count
-            FROM quizzes q
-            WHERE q.id = ?
-            """,
-            (quiz_id,),
-        )
-        row = cursor.fetchone()
-        if not row:
+        stmt = select(Quiz).where(Quiz.id == quiz_id)
+        quiz = self.db.scalars(stmt).first()
+        if not quiz:
             return None
-        return dict(row)
+        return self._to_dict(quiz)
 
     def list_all(self) -> List[Dict[str, Any]]:
-        cursor = self.conn.cursor()
-        cursor.execute(
-            """
-            SELECT q.id, q.title, q.description, q.created_at, q.updated_at,
-                   (SELECT COUNT(*) FROM questions WHERE quiz_id = q.id) AS question_count
-            FROM quizzes q
-            ORDER BY q.id DESC
-            """
-        )
-        return [dict(row) for row in cursor.fetchall()]
+        stmt = select(Quiz).order_by(Quiz.id.desc())
+        quizzes = self.db.scalars(stmt).all()
+        return [self._to_dict(q) for q in quizzes]
 
     def find_by_title(self, title: str) -> List[Dict[str, Any]]:
-        """Used for Q06 Feature 3: Search Before Add."""
-        cursor = self.conn.cursor()
-        cursor.execute(
-            """
-            SELECT id, title, description, created_at, updated_at
-            FROM quizzes
-            WHERE LOWER(title) = LOWER(?)
-            """,
-            (title.strip(),),
-        )
-        return [dict(row) for row in cursor.fetchall()]
+        """Used for Q06 Feature 3: Search Before Add (case-insensitive)."""
+        clean = title.strip()
+        stmt = select(Quiz).where(func.lower(Quiz.title) == func.lower(clean))
+        quizzes = self.db.scalars(stmt).all()
+        return [self._to_dict(q) for q in quizzes]
 
-    def update(self, quiz_id: int, title: Optional[str] = None, description: Optional[str] = None) -> Optional[Dict[str, Any]]:
-        existing = self.get_by_id(quiz_id)
-        if not existing:
+    def update(
+        self, quiz_id: int, title: Optional[str] = None, description: Optional[str] = None
+    ) -> Optional[Dict[str, Any]]:
+        quiz = self.db.get(Quiz, quiz_id)
+        if not quiz:
             return None
 
-        new_title = title if title is not None else existing["title"]
-        new_desc = description if description is not None else existing["description"]
-        now = datetime.now().isoformat()
+        if title is not None:
+            quiz.title = title.strip()
+        if description is not None:
+            quiz.description = description.strip() if description else None
 
-        cursor = self.conn.cursor()
-        cursor.execute(
-            """
-            UPDATE quizzes
-            SET title = ?, description = ?, updated_at = ?
-            WHERE id = ?
-            """,
-            (new_title, new_desc, now, quiz_id),
-        )
-        self.conn.commit()
-        return self.get_by_id(quiz_id)
+        quiz.updated_at = datetime.now(timezone.utc).isoformat()
+        self.db.commit()
+        self.db.refresh(quiz)
+        return self._to_dict(quiz)
 
     def delete(self, quiz_id: int) -> bool:
-        cursor = self.conn.cursor()
-        cursor.execute("DELETE FROM quizzes WHERE id = ?", (quiz_id,))
-        self.conn.commit()
-        return cursor.rowcount > 0
+        quiz = self.db.get(Quiz, quiz_id)
+        if not quiz:
+            return False
+        self.db.delete(quiz)
+        self.db.commit()
+        return True

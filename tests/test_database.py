@@ -2,111 +2,145 @@
 Test suite for database layer and Q06 Feature 1: Unique ID Constraints.
 """
 
-import sqlite3
 import pytest
-from backend.database import get_connection, init_db
+from sqlalchemy import create_engine, event, inspect
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session, sessionmaker
+
+from backend.database import init_db
+from backend.db_models import Participant, Question, Quiz, Session as QuizSession, User
 
 
 @pytest.fixture
 def test_db(tmp_path):
-    """Fixture providing an isolated SQLite database for each test run."""
+    """Fixture providing an isolated SQLite database session for each test run."""
     db_file = tmp_path / "test_quiz.db"
-    init_db(db_file)
-    conn = get_connection(db_file)
+    test_engine = create_engine(
+        f"sqlite:///{db_file.as_posix()}",
+        connect_args={"check_same_thread": False},
+    )
+
+    @event.listens_for(test_engine, "connect")
+    def set_sqlite_pragma(dbapi_connection, connection_record):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON;")
+        cursor.close()
+
+    init_db(test_engine)
+    TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
+    session = TestingSessionLocal()
     try:
-        yield conn
+        yield session
     finally:
-        conn.close()
+        session.close()
 
 
-def test_tables_created_successfully(test_db):
-    """Verify that all 5 core tables exist after initialization."""
-    cursor = test_db.cursor()
-    cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
-    tables = {row["name"] for row in cursor.fetchall()}
-    assert {"quizzes", "questions", "sessions", "participants", "submissions"}.issubset(tables)
+def test_tables_created_successfully(test_db: Session):
+    """Verify that all core tables exist after initialization."""
+    inspector = inspect(test_db.bind)
+    tables = set(inspector.get_table_names())
+    assert {"users", "quizzes", "questions", "sessions", "participants", "submissions"}.issubset(tables)
 
 
-def test_foreign_key_cascade_deletion(test_db):
+def test_foreign_key_cascade_deletion(test_db: Session):
     """Verify that deleting a quiz cascades to its associated questions."""
-    cursor = test_db.cursor()
-    cursor.execute(
-        "INSERT INTO quizzes (title, description, created_at, updated_at) VALUES (?, ?, ?, ?)",
-        ("Test Quiz", "Desc", "2026-10-11T10:00:00", "2026-10-11T10:00:00"),
+    quiz = Quiz(
+        title="Test Quiz",
+        description="Desc",
+        created_at="2026-10-11T10:00:00",
+        updated_at="2026-10-11T10:00:00",
     )
-    quiz_id = cursor.lastrowid
+    test_db.add(quiz)
+    test_db.commit()
 
-    cursor.execute(
-        """
-        INSERT INTO questions (quiz_id, question_text, question_type, correct_answer, created_at)
-        VALUES (?, ?, ?, ?, ?)
-        """,
-        (quiz_id, "Sample Question?", "mcq", "Answer A", "2026-10-11T10:00:00"),
+    question = Question(
+        quiz_id=quiz.id,
+        question_text="Sample Question?",
+        question_type="mcq",
+        correct_answer="Answer A",
+        created_at="2026-10-11T10:00:00",
     )
+    test_db.add(question)
     test_db.commit()
 
     # Confirm question is saved
-    cursor.execute("SELECT COUNT(*) as count FROM questions WHERE quiz_id = ?", (quiz_id,))
-    assert cursor.fetchone()["count"] == 1
+    count_before = test_db.query(Question).filter(Question.quiz_id == quiz.id).count()
+    assert count_before == 1
 
-    # Delete the parent quiz
-    cursor.execute("DELETE FROM quizzes WHERE id = ?", (quiz_id,))
+    # Delete parent quiz
+    test_db.delete(quiz)
     test_db.commit()
 
     # Questions referencing this quiz must be automatically deleted by cascade
-    cursor.execute("SELECT COUNT(*) as count FROM questions WHERE quiz_id = ?", (quiz_id,))
-    assert cursor.fetchone()["count"] == 0
+    count_after = test_db.query(Question).filter(Question.quiz_id == quiz.id).count()
+    assert count_after == 0
 
 
-def test_q06_unique_session_code_constraint(test_db):
+def test_q06_unique_session_code_constraint(test_db: Session):
     """FR-Q1: Verify UNIQUE constraint on session_code rejects duplicates."""
-    cursor = test_db.cursor()
-    cursor.execute(
-        "INSERT INTO quizzes (title, created_at, updated_at) VALUES (?, ?, ?)",
-        ("Quiz 1", "2026-10-11T10:00:00", "2026-10-11T10:00:00"),
+    quiz = Quiz(
+        title="Quiz 1",
+        created_at="2026-10-11T10:00:00",
+        updated_at="2026-10-11T10:00:00",
     )
-    quiz_id = cursor.lastrowid
+    test_db.add(quiz)
+    test_db.commit()
 
-    cursor.execute(
-        "INSERT INTO sessions (quiz_id, session_code, started_at) VALUES (?, ?, ?)",
-        (quiz_id, "CODE123", "2026-10-11T10:00:00"),
+    sess1 = QuizSession(
+        quiz_id=quiz.id,
+        session_code="CODE123",
+        started_at="2026-10-11T10:00:00",
     )
+    test_db.add(sess1)
     test_db.commit()
 
     # Attempting to insert identical session_code must raise IntegrityError
-    with pytest.raises(sqlite3.IntegrityError):
-        cursor.execute(
-            "INSERT INTO sessions (quiz_id, session_code, started_at) VALUES (?, ?, ?)",
-            (quiz_id, "CODE123", "2026-10-11T10:05:00"),
-        )
+    sess2 = QuizSession(
+        quiz_id=quiz.id,
+        session_code="CODE123",
+        started_at="2026-10-11T10:05:00",
+    )
+    test_db.add(sess2)
+    with pytest.raises(IntegrityError):
         test_db.commit()
+    test_db.rollback()
 
 
-def test_q06_unique_participant_per_session_constraint(test_db):
+def test_q06_unique_participant_per_session_constraint(test_db: Session):
     """FR-Q1: Verify UNIQUE(session_id, student_identifier) prevents duplicate join."""
-    cursor = test_db.cursor()
-    cursor.execute(
-        "INSERT INTO quizzes (title, created_at, updated_at) VALUES (?, ?, ?)",
-        ("Quiz 1", "2026-10-11T10:00:00", "2026-10-11T10:00:00"),
+    quiz = Quiz(
+        title="Quiz 1",
+        created_at="2026-10-11T10:00:00",
+        updated_at="2026-10-11T10:00:00",
     )
-    quiz_id = cursor.lastrowid
+    test_db.add(quiz)
+    test_db.commit()
 
-    cursor.execute(
-        "INSERT INTO sessions (quiz_id, session_code, started_at) VALUES (?, ?, ?)",
-        (quiz_id, "CODE999", "2026-10-11T10:00:00"),
+    sess = QuizSession(
+        quiz_id=quiz.id,
+        session_code="CODE999",
+        started_at="2026-10-11T10:00:00",
     )
-    session_id = cursor.lastrowid
+    test_db.add(sess)
+    test_db.commit()
 
-    cursor.execute(
-        "INSERT INTO participants (session_id, student_name, student_identifier, joined_at) VALUES (?, ?, ?, ?)",
-        (session_id, "Alice", "AU-24-0001", "2026-10-11T10:01:00"),
+    p1 = Participant(
+        session_id=sess.id,
+        student_name="Alice",
+        student_identifier="AU-24-0001",
+        joined_at="2026-10-11T10:01:00",
     )
+    test_db.add(p1)
     test_db.commit()
 
     # Same student joining the same session again must be rejected
-    with pytest.raises(sqlite3.IntegrityError):
-        cursor.execute(
-            "INSERT INTO participants (session_id, student_name, student_identifier, joined_at) VALUES (?, ?, ?, ?)",
-            (session_id, "Alice Duplicate", "AU-24-0001", "2026-10-11T10:02:00"),
-        )
+    p2 = Participant(
+        session_id=sess.id,
+        student_name="Alice Duplicate",
+        student_identifier="AU-24-0001",
+        joined_at="2026-10-11T10:02:00",
+    )
+    test_db.add(p2)
+    with pytest.raises(IntegrityError):
         test_db.commit()
+    test_db.rollback()
