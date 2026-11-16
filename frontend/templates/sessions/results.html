@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block title %}Session Analytics — {{ results.session_code }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div style="margin-bottom: 0.35rem;">
+      <a href="/dashboard" style="color: var(--primary); font-size: 0.88rem; text-decoration: none;">&larr; Back to Dashboard</a>
+    </div>
+    <h1 class="page-title">Session Analytics & Leaderboard</h1>
+    <p class="page-subtitle">
+      Quiz: <strong>{{ results.quiz_title }}</strong> &bull; Session Code: <code>{{ results.session_code }}</code> &bull;
+      Status: <span class="badge {% if results.status == 'active' %}badge-active{% else %}badge-ended{% endif %}">{{ results.status }}</span>
+    </p>
+  </div>
+  {% if results.status == 'active' %}
+  <div>
+    <form action="/sessions/{{ results.session_id }}/end" method="post" data-confirm="Are you sure you want to end this session now? Students will no longer be able to submit." data-confirm-title="End Session (Poka-Yoke)">
+      <button type="submit" class="btn btn-danger">End Live Session</button>
+    </form>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Aggregated Statistics Cards -->
+<div class="grid-4" style="margin-bottom: 2rem;">
+  <div class="stat-card">
+    <div class="stat-label">Total Participants</div>
+    <div class="stat-value">{{ results.total_participants }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Completed Tests</div>
+    <div class="stat-value">{{ results.total_submissions }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Average Score</div>
+    <div class="stat-value" style="color: var(--primary);">{{ results.average_score }} <span style="font-size: 1rem; color: var(--text-muted);">/ {{ results.max_score }}</span></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Highest Score</div>
+    <div class="stat-value" style="color: var(--success);">{{ results.highest_score }} <span style="font-size: 1rem; color: var(--text-muted);">/ {{ results.max_score }}</span></div>
+  </div>
+</div>
+
+<!-- Leaderboard Table -->
+<div class="card">
+  <div class="card-title">
+    <span>🏆 Participant Leaderboard</span>
+  </div>
+
+  {% if results.leaderboard %}
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th style="width: 60px;">Rank</th>
+          <th>Student Name</th>
+          <th>Roll Number / ID</th>
+          <th>Score</th>
+          <th>Percentage</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in results.leaderboard %}
+        <tr>
+          <td>
+            {% if loop.index == 1 and p.has_submitted %}🥇
+            {% elif loop.index == 2 and p.has_submitted %}🥈
+            {% elif loop.index == 3 and p.has_submitted %}🥉
+            {% else %}#{{ loop.index }}
+            {% endif %}
+          </td>
+          <td><strong>{{ p.student_name }}</strong></td>
+          <td><code>{{ p.student_identifier }}</code></td>
+          <td><strong>{{ p.score }}</strong> / {{ p.max_score }}</td>
+          <td>
+            <span style="font-weight: 600; color: {% if p.percentage >= 50 %}var(--success){% else %}var(--danger){% endif %};">
+              {{ p.percentage }}%
+            </span>
+          </td>
+          <td>
+            {% if p.has_submitted %}
+              <span class="badge badge-active">Submitted</span>
+            {% else %}
+              <span class="badge badge-warning">In Progress</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    <p style="text-align: center; color: var(--text-muted); padding: 2rem;">
+      No participants have joined this session yet. Share session code <code>{{ results.session_code }}</code> with students!
+    </p>
+  {% endif %}
+</div>
+
+<!-- Per-Question Accuracy Analytics -->
+<div class="card">
+  <div class="card-title">
+    <span>📊 Item-Wise Accuracy & Defect Analytics (TQM / SQC)</span>
+  </div>
+
+  {% if results.question_stats %}
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th style="width: 50px;">#</th>
+          <th>Question Prompt</th>
+          <th>Type</th>
+          <th>Correct / Total</th>
+          <th>Accuracy Rate</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for q in results.question_stats %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td>{{ q.question_text }}</td>
+          <td><span class="badge badge-secondary">{{ q.question_type.upper() }}</span></td>
+          <td>{{ q.correct_responses }} / {{ q.total_responses }}</td>
+          <td>
+            <div style="display: flex; align-items: center; gap: 0.6rem;">
+              <div style="flex: 1; max-width: 120px; background: #e2e8f0; height: 8px; border-radius: 4px; overflow: hidden;">
+                <div style="background: {% if q.accuracy_rate >= 70 %}var(--success){% elif q.accuracy_rate >= 40 %}var(--warning){% else %}var(--danger){% endif %}; height: 100%; width: {{ q.accuracy_rate }}%;"></div>
+              </div>
+              <span style="font-weight: 600; font-size: 0.85rem;">{{ q.accuracy_rate }}%</span>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    <p style="text-align: center; color: var(--text-muted); padding: 1.5rem;">
+      No question data available.
+    </p>
+  {% endif %}
+</div>
+{% endblock %}

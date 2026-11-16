@@ -2,8 +2,8 @@
 Pydantic schemas and data validation models for the Online Quiz System.
 
 Enforces:
-- Q06 Feature 2: Pre-add Validation (input sanitization, bounds checking,
-  structural MCQ consistency checks before data reaches the storage layer).
+- Input sanitization, bounds checking, and data validation
+- Structural MCQ consistency checks before data reaches the storage layer.
 """
 
 from __future__ import annotations
@@ -23,7 +23,7 @@ QuestionType = Literal["mcq", "true_false", "short_answer"]
 # ==========================================
 
 class QuizCreate(BaseModel):
-    """Payload for creating a new quiz (with Q06 Pre-add Validation)."""
+    """Payload for creating a new quiz."""
     title: str = Field(..., max_length=200, description="Title of the quiz")
     description: Optional[str] = Field(None, max_length=1000, description="Optional description")
 
@@ -77,7 +77,7 @@ class QuizResponse(BaseModel):
 # ==========================================
 
 class QuestionCreate(BaseModel):
-    """Payload for creating a question (with Q06 Pre-add Validation)."""
+    """Payload for creating a question."""
     question_text: str = Field(..., max_length=2000, description="The prompt of the question")
     question_type: QuestionType = Field(default="mcq", description="Question category")
     options: Optional[List[str]] = Field(default=None, description="List of options for MCQ")
@@ -117,7 +117,7 @@ class QuestionCreate(BaseModel):
 
 
 class QuestionUpdate(BaseModel):
-    """Payload for editing a question (with Q06 Pre-add Validation)."""
+    """Payload for editing a question."""
     question_text: Optional[str] = Field(None, max_length=2000)
     options: Optional[List[str]] = None
     correct_answer: Optional[str] = Field(None, max_length=500)
@@ -168,7 +168,7 @@ class QuestionResponse(BaseModel):
 # ==========================================
 
 class UserCreate(BaseModel):
-    """Payload for registering a new teacher account (with Q06 Pre-add Validation)."""
+    """Payload for registering a new teacher account."""
     email: str = Field(..., max_length=255, description="Unique email address")
     password: str = Field(..., min_length=6, max_length=128, description="Account password")
     name: str = Field(..., min_length=1, max_length=200, description="Display name")
@@ -210,3 +210,91 @@ class UserResponse(BaseModel):
     name: str
     role: str
     created_at: str
+
+
+# ==========================================
+# SESSION & PARTICIPANT SCHEMAS
+# ==========================================
+
+class SessionCreate(BaseModel):
+    """Payload to initiate a new quiz session."""
+    quiz_id: int = Field(..., ge=1, description="Quiz to launch")
+
+
+class SessionResponse(BaseModel):
+    """Live assessment session representation."""
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    quiz_id: int
+    session_code: str
+    status: str
+    started_at: str
+    ended_at: Optional[str] = None
+    quiz_title: Optional[str] = None
+    participant_count: int = 0
+
+
+class ParticipantJoin(BaseModel):
+    """Student entry payload for joining an active session."""
+    student_name: str = Field(..., min_length=1, max_length=200, description="Student's name")
+    student_identifier: str = Field(..., min_length=1, max_length=100, description="Roll Number / ID")
+
+    @field_validator("student_name", "student_identifier")
+    @classmethod
+    def validate_non_empty(cls, v: str) -> str:
+        cleaned = v.strip()
+        if not cleaned:
+            raise ValueError("Student name and identifier cannot be blank.")
+        return cleaned
+
+
+class ParticipantResponse(BaseModel):
+    """Participant record returned to student upon entry."""
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    session_id: int
+    student_name: str
+    student_identifier: str
+    joined_at: str
+
+
+class AnswerSubmission(BaseModel):
+    """Single answer submission within a quiz."""
+    question_id: int = Field(..., ge=1)
+    answer_text: str = Field(..., max_length=2000)
+
+    @field_validator("answer_text")
+    @classmethod
+    def clean_answer(cls, v: str) -> str:
+        return v.strip()
+
+
+class QuizSubmissionPayload(BaseModel):
+    """Batch answers submitted by a participant at the conclusion of a quiz."""
+    participant_id: int = Field(..., ge=1)
+    answers: List[AnswerSubmission] = Field(..., min_length=1)
+
+
+class SubmissionDetailResponse(BaseModel):
+    """Graded result for a single question."""
+    question_id: int
+    question_text: str
+    submitted_answer: str
+    correct_answer: str
+    is_correct: bool
+    points_awarded: int
+    max_points: int
+
+
+class StudentQuizResult(BaseModel):
+    """Summary result returned to student after grading."""
+    participant_id: int
+    student_name: str
+    student_identifier: str
+    total_score: int
+    max_score: int
+    percentage: float
+    details: List[SubmissionDetailResponse]
+

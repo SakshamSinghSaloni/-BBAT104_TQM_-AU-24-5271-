@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Welcome{% endblock %}
+
+{% block content %}
+<div style="text-align: center; max-width: 760px; margin: 2rem auto 3rem;">
+  <span class="badge badge-active" style="margin-bottom: 0.75rem;">Online Assessment System</span>
+  <h1 style="font-size: 2.4rem; font-weight: 800; color: var(--text-main); line-height: 1.2;">
+    Online Quiz Assessment System
+  </h1>
+  <p style="font-size: 1.1rem; color: var(--text-muted); margin-top: 0.75rem;">
+    A unified, multi-user web platform engineered to deliver reliable, secure, and duplicate-free assessments for instructors and students.
+  </p>
+</div>
+
+<!-- Choice Grid: Student vs Teacher -->
+<div class="grid-2" style="margin-bottom: 3rem;">
+  <!-- Student Card -->
+  <div class="card" style="border-top: 4px solid var(--primary); display: flex; flex-direction: column; justify-content: space-between;">
+    <div>
+      <div style="font-size: 2.2rem; margin-bottom: 0.5rem;">🎓</div>
+      <h2 style="font-size: 1.35rem; font-weight: 700; margin-bottom: 0.5rem;">I am a Student</h2>
+      <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1.5rem;">
+        No account required. Join an active classroom assessment session directly using your Student ID and the 6-character session code provided by your instructor.
+      </p>
+    </div>
+    <a href="/join" class="btn btn-primary btn-lg" style="width: 100%;">Enter Session Code</a>
+  </div>
+
+  <!-- Teacher Card -->
+  <div class="card" style="border-top: 4px solid var(--success); display: flex; flex-direction: column; justify-content: space-between;">
+    <div>
+      <div style="font-size: 2.2rem; margin-bottom: 0.5rem;">👨‍🏫</div>
+      <h2 style="font-size: 1.35rem; font-weight: 700; margin-bottom: 0.5rem;">I am an Instructor</h2>
+      <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1.5rem;">
+        Create and edit quizzes, manage questions, launch live evaluation sessions, view real-time leaderboards, and monitor statistical accuracy metrics.
+      </p>
+    </div>
+    {% if current_user %}
+      <a href="/dashboard" class="btn btn-success btn-lg" style="width: 100%;">Go to Dashboard</a>
+    {% else %}
+      <div style="display: flex; gap: 0.75rem;">
+        <a href="/auth/login" class="btn btn-success btn-lg" style="flex: 1;">Login</a>
+        <a href="/auth/register" class="btn btn-secondary btn-lg" style="flex: 1;">Register</a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,8 @@
+{% if flash_message %}
+<div class="flash-container">
+  <div class="alert alert-{{ flash_type or 'info' }}" role="alert">
+    <span>{{ flash_message }}</span>
+    <button type="button" class="alert-close" aria-label="Close">&times;</button>
+  </div>
+</div>
+{% endif %}

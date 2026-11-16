@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block title %}Teacher Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Instructor Dashboard</h1>
+    <p class="page-subtitle">Welcome back, <strong>{{ current_user.name }}</strong> ({{ current_user.email }})</p>
+  </div>
+  <div>
+    <a href="/quizzes" class="btn btn-primary">+ Create & Manage Quizzes</a>
+  </div>
+</div>
+
+<!-- Stat Cards -->
+<div class="grid-4" style="margin-bottom: 2rem;">
+  <div class="stat-card">
+    <div class="stat-label">Total Quizzes</div>
+    <div class="stat-value">{{ stats.total_quizzes }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Active Sessions</div>
+    <div class="stat-value" style="color: var(--success);">{{ stats.active_sessions }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Total Participants</div>
+    <div class="stat-value">{{ stats.total_participants }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Total Submissions</div>
+    <div class="stat-value">{{ stats.total_submissions }}</div>
+  </div>
+</div>
+
+<!-- Live Sessions Section -->
+<div class="card">
+  <div class="card-title">
+    <span>📡 Live & Recent Assessment Sessions</span>
+  </div>
+
+  {% if sessions %}
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Session Code</th>
+          <th>Quiz Title</th>
+          <th>Status</th>
+          <th>Participants</th>
+          <th>Started At</th>
+          <th style="text-align: right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in sessions %}
+        <tr>
+          <td><code style="font-weight: 700; font-size: 1rem; color: var(--primary);">{{ s.session_code }}</code></td>
+          <td><strong>{{ s.quiz.title if s.quiz else 'Quiz #' ~ s.quiz_id }}</strong></td>
+          <td>
+            {% if s.status == 'active' %}
+              <span class="badge badge-active">Active</span>
+            {% else %}
+              <span class="badge badge-ended">Ended</span>
+            {% endif %}
+          </td>
+          <td>{{ s.participants|length }} enrolled</td>
+          <td style="color: var(--text-muted); font-size: 0.85rem;">{{ s.started_at[:19].replace('T', ' ') }}</td>
+          <td style="text-align: right;">
+            <a href="/sessions/{{ s.id }}/results" class="btn btn-secondary btn-sm">Analytics & Leaderboard</a>
+            {% if s.status == 'active' %}
+            <form action="/sessions/{{ s.id }}/end" method="post" style="display:inline;" data-confirm="Are you sure you want to terminate this live session? No more students will be able to join or submit." data-confirm-title="End Session (Poka-Yoke)">
+              <button type="submit" class="btn btn-danger btn-sm">End</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    <p style="color: var(--text-muted); text-align: center; padding: 2rem;">
+      No assessment sessions created yet. Launch one from your <a href="/quizzes" style="color: var(--primary);">Quiz Library</a>!
+    </p>
+  {% endif %}
+</div>
+
+<!-- Recent Quizzes Section -->
+<div class="card">
+  <div class="card-title">
+    <span>📚 Quiz Library</span>
+    <a href="/quizzes" class="btn btn-secondary btn-sm">Manage All</a>
+  </div>
+
+  {% if quizzes %}
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Questions</th>
+          <th>Created</th>
+          <th style="text-align: right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for q in quizzes[:5] %}
+        <tr>
+          <td>
+            <strong>{{ q.title }}</strong>
+            {% if q.description %}
+              <div style="font-size: 0.82rem; color: var(--text-muted);">{{ q.description }}</div>
+            {% endif %}
+          </td>
+          <td>{{ q.questions|length }} questions</td>
+          <td style="color: var(--text-muted); font-size: 0.85rem;">{{ q.created_at[:10] }}</td>
+          <td style="text-align: right;">
+            <a href="/quizzes/{{ q.id }}/questions" class="btn btn-secondary btn-sm">Edit Questions</a>
+            <form action="/quizzes/{{ q.id }}/sessions" method="post" style="display:inline;">
+              <button type="submit" class="btn btn-success btn-sm">Launch Session</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    <p style="color: var(--text-muted); text-align: center; padding: 2rem;">
+      No quizzes created yet. Click "+ Create & Manage Quizzes" above to build your first quiz!
+    </p>
+  {% endif %}
+</div>
+{% endblock %}

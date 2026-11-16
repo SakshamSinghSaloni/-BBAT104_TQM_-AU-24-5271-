@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Take Quiz — {{ quiz.title }}{% endblock %}
+
+{% block content %}
+<div class="card" style="background: #1e293b; color: #fff; margin-bottom: 2rem;">
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <span class="badge badge-active" style="margin-bottom: 0.4rem;">Live Session: {{ session.session_code }}</span>
+      <h1 style="font-size: 1.5rem; font-weight: 700; color: #fff;">{{ quiz.title }}</h1>
+      <p style="color: #94a3b8; font-size: 0.88rem; margin-top: 0.2rem;">
+        Candidate: <strong>{{ participant.student_name }}</strong> (Roll No. <code>{{ participant.student_identifier }}</code>)
+      </p>
+    </div>
+    <div style="text-align: right;">
+      <span style="font-size: 0.85rem; color: #94a3b8; display: block;">Total Questions</span>
+      <span style="font-size: 1.4rem; font-weight: 700;">{{ questions|length }}</span>
+    </div>
+  </div>
+</div>
+
+<form action="/session/{{ session.session_code }}/submit" method="post" id="quizSubmitForm" data-confirm="Are you ready to submit your assessment? Once submitted, answers cannot be edited." data-confirm-title="Submit Assessment (Poka-Yoke)">
+  <input type="hidden" name="participant_id" value="{{ participant.id }}">
+
+  {% for q in questions %}
+  <div class="card" style="margin-bottom: 1.5rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+      <span class="badge badge-secondary">Question {{ loop.index }} of {{ questions|length }}</span>
+      <span style="font-size: 0.82rem; color: var(--text-muted); font-weight: 600;">{{ q.points }} pt{% if q.points > 1 %}s{% endif %}</span>
+    </div>
+
+    <h2 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 1.2rem; color: var(--text-main);">
+      {{ q.question_text }}
+    </h2>
+
+    {% if q.question_type == 'mcq' and q.options %}
+      <div style="display: flex; flex-direction: column;">
+        {% for opt in q.options %}
+        <label class="option-label">
+          <input type="radio" name="q_{{ q.id }}" value="{{ opt }}" required>
+          <span>{{ opt }}</span>
+        </label>
+        {% endfor %}
+      </div>
+    {% elif q.question_type == 'true_false' %}
+      <div style="display: flex; flex-direction: column;">
+        <label class="option-label">
+          <input type="radio" name="q_{{ q.id }}" value="True" required>
+          <span>True</span>
+        </label>
+        <label class="option-label">
+          <input type="radio" name="q_{{ q.id }}" value="False" required>
+          <span>False</span>
+        </label>
+      </div>
+    {% else %}
+      <div class="form-group" style="margin-top: 0.5rem;">
+        <input type="text" name="q_{{ q.id }}" class="form-control" placeholder="Type your answer here..." required autocomplete="off">
+        <div class="form-hint">Answer comparison is case-insensitive.</div>
+      </div>
+    {% endif %}
+  </div>
+  {% endfor %}
+
+  <div style="text-align: right; margin-bottom: 3rem;">
+    <button type="submit" class="btn btn-primary btn-lg" style="min-width: 200px;">
+      Submit Quiz Answers &rarr;
+    </button>
+  </div>
+</form>
+{% endblock %}

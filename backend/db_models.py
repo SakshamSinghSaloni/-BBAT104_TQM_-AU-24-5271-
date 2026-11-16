@@ -3,7 +3,7 @@ SQLAlchemy 2.0 ORM Declarative Models for the Online Quiz System.
 
 Enforces:
 - Foreign key cascading deletes (ON DELETE CASCADE)
-- Q06 Feature 1: Storage-level Unique ID Constraints (PKs, UNIQUE columns, composite unique constraints)
+- Storage-level Unique Constraints (PKs, UNIQUE columns, composite unique constraints)
 """
 
 from __future__ import annotations
@@ -31,7 +31,7 @@ class Base(DeclarativeBase):
 class User(Base):
     """
     Teacher / Administrator account table.
-    Enforces Q06: UNIQUE(email).
+    Unique constraint on email.
     Note: Students are ephemeral participants (stored in Participant table), not User accounts.
     """
     __tablename__ = "users"
@@ -51,7 +51,7 @@ class User(Base):
 class Quiz(Base):
     """
     Quiz entity.
-    Enforces Q06: UNIQUE(title).
+    Unique constraint on title.
     """
     __tablename__ = "quizzes"
 
@@ -87,7 +87,7 @@ class Quiz(Base):
 class Question(Base):
     """
     Question entity within a Quiz.
-    Enforces Q06: CONSTRAINT uq_quiz_question_text UNIQUE (quiz_id, question_text).
+    CONSTRAINT uq_quiz_question_text UNIQUE (quiz_id, question_text).
     """
     __tablename__ = "questions"
     __table_args__ = (
@@ -141,7 +141,7 @@ class Question(Base):
 class Session(Base):
     """
     Active or completed Quiz evaluation session.
-    Enforces Q06: UNIQUE(session_code).
+    Unique constraint on session_code.
     """
     __tablename__ = "sessions"
 
@@ -173,7 +173,7 @@ class Session(Base):
 class Participant(Base):
     """
     Student participant in a Quiz session.
-    Enforces Q06: CONSTRAINT uq_session_participant UNIQUE (session_id, student_identifier).
+    CONSTRAINT uq_session_participant UNIQUE (session_id, student_identifier).
     """
     __tablename__ = "participants"
     __table_args__ = (
@@ -207,7 +207,7 @@ class Participant(Base):
 class Submission(Base):
     """
     Student answer submission for a Question.
-    Enforces Q06: CONSTRAINT uq_participant_question UNIQUE (participant_id, question_id).
+    CONSTRAINT uq_participant_question UNIQUE (participant_id, question_id).
     """
     __tablename__ = "submissions"
     __table_args__ = (

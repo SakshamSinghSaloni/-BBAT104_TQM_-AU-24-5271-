@@ -1,8 +1,5 @@
 """
 Business logic service for Quiz management.
-
-Enforces:
-- Q06 Feature 3: Search Before Add (identifies duplicate or near-duplicate titles)
 """
 
 from __future__ import annotations
@@ -20,9 +17,9 @@ class QuizService:
     def create_quiz(self, title: str, description: Optional[str] = None) -> Dict[str, Any]:
         """
         Create a new quiz record.
-        Includes Q06 Search Before Add check to audit duplicate titles.
+        Includes verification check to audit duplicate titles.
         """
-        # Q06 Feature 3: Search Before Add (Strict Duplicate Prevention)
+        # Duplicate Prevention check
         existing = self.repo.find_by_title(title)
         if existing:
             raise ValueError(
@@ -45,7 +42,7 @@ class QuizService:
         if not existing:
             return None
 
-        # Q06 Feature 3: Search Before Add (Strict Duplicate Prevention on title update)
+        # Duplicate Prevention on title update
         if title is not None and title.strip().lower() != existing["title"].strip().lower():
             duplicates = self.repo.find_by_title(title)
             if duplicates:

@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Questions — {{ quiz.title }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div style="margin-bottom: 0.35rem;">
+      <a href="/quizzes" style="color: var(--primary); font-size: 0.88rem; text-decoration: none;">&larr; Back to Quiz Library</a>
+    </div>
+    <h1 class="page-title">{{ quiz.title }}</h1>
+    <p class="page-subtitle">{{ quiz.description or 'No description provided' }} &bull; {{ questions|length }} questions (Total Points: {{ total_points }})</p>
+  </div>
+  <div>
+    <form action="/quizzes/{{ quiz.id }}/sessions" method="post" style="display:inline;">
+      <button type="submit" class="btn btn-success">Launch Live Session &rarr;</button>
+    </form>
+  </div>
+</div>
+
+<div class="grid-2">
+  <!-- Add Question Form -->
+  <div class="card" style="border-top: 4px solid var(--primary);">
+    <h2 class="card-title">Add New Question</h2>
+
+    <form action="/quizzes/{{ quiz.id }}/questions" method="post" id="addQuestionForm">
+      <div class="form-group">
+        <label for="question_text" class="form-label">Question Prompt <span style="color:var(--danger)">*</span></label>
+        <textarea id="question_text" name="question_text" class="form-control" rows="2" placeholder="e.g. What is the time complexity of binary search?" required></textarea>
+        <div class="form-hint">Question prompt must be unique within this quiz.</div>
+      </div>
+
+      <div class="grid-2">
+        <div class="form-group">
+          <label for="question_type" class="form-label">Question Type</label>
+          <select id="question_type" name="question_type" class="form-control">
+            <option value="mcq" selected>Multiple Choice (MCQ)</option>
+            <option value="true_false">True / False</option>
+            <option value="short_answer">Short Answer</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="points" class="form-label">Points Awarded</label>
+          <input type="number" id="points" name="points" class="form-control" value="1" min="1" max="100" required>
+        </div>
+      </div>
+
+      <!-- MCQ Options Section -->
+      <div id="mcq_options_section">
+        <label class="form-label">Options & Correct Answer <span style="color:var(--danger)">*</span></label>
+        <div class="form-hint" style="margin-bottom: 0.5rem;">Enter distinct options and select the radio for the correct option.</div>
+
+        {% for i in range(1, 5) %}
+        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+          <input type="radio" name="mcq_correct_idx" value="{{ i }}" {% if i == 1 %}checked{% endif %} title="Mark option {{ i }} as correct">
+          <input type="text" name="mcq_option_{{ i }}" class="form-control" placeholder="Option {{ i }}" {% if i <= 2 %}required{% endif %}>
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- True/False Section -->
+      <div id="tf_options_section" style="display: none;">
+        <label class="form-label">Correct Answer</label>
+        <div style="display: flex; gap: 1.5rem; margin-top: 0.4rem;">
+          <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer;">
+            <input type="radio" name="tf_answer" value="True" checked> <strong>True</strong>
+          </label>
+          <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer;">
+            <input type="radio" name="tf_answer" value="False"> <strong>False</strong>
+          </label>
+        </div>
+      </div>
+
+      <!-- Short Answer Section -->
+      <div id="text_answer_section" style="display: none;">
+        <div class="form-group">
+          <label for="short_answer_input" class="form-label">Expected Answer</label>
+          <input type="text" id="short_answer_input" name="short_answer_text" class="form-control" placeholder="e.g. O(log n)">
+          <div class="form-hint">Grading is case-insensitive and ignores surrounding whitespace.</div>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
+        + Add Question
+      </button>
+    </form>
+  </div>
+
+  <!-- Questions List -->
+  <div>
+    <div class="card">
+      <div class="card-title">Existing Questions ({{ questions|length }})</div>
+
+      {% if questions %}
+        {% for q in questions %}
+        <div style="border-bottom: 1px solid var(--border-color); padding: 1rem 0; {% if loop.last %}border-bottom:none;{% endif %}">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.4rem;">
+            <div>
+              <span class="badge badge-secondary" style="margin-right: 0.4rem;">Q{{ loop.index }}</span>
+              <span class="badge badge-active" style="margin-right: 0.4rem;">{{ q.question_type.upper() }}</span>
+              <span style="font-size: 0.8rem; color: var(--text-muted);">{{ q.points }} pt{% if q.points > 1 %}s{% endif %}</span>
+            </div>
+            <form action="/quizzes/{{ quiz.id }}/questions/{{ q.id }}/delete" method="post" style="display:inline;" data-confirm="Are you sure you want to delete Question {{ loop.index }}? Submissions for this question will also be removed." data-confirm-title="Delete Question">
+              <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+            </form>
+          </div>
+
+          <p style="font-size: 0.95rem; font-weight: 600; margin-bottom: 0.5rem;">{{ q.question_text }}</p>
+
+          {% if q.question_type == 'mcq' and q.options %}
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; font-size: 0.85rem;">
+            {% for opt in q.options %}
+              <div style="padding: 0.35rem 0.6rem; border-radius: 4px; border: 1px solid var(--border-color); {% if opt == q.correct_answer %}background-color: #dcfce7; border-color: #86efac; font-weight: 600; color: #166534;{% else %}background: #fff;{% endif %}">
+                {{ opt }} {% if opt == q.correct_answer %}&#10003;{% endif %}
+              </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div style="font-size: 0.85rem; color: var(--text-muted);">
+            Correct Answer: <strong style="color: #166534;">{{ q.correct_answer }}</strong>
+          </div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      {% else %}
+        <p style="text-align: center; color: var(--text-muted); padding: 2rem;">
+          No questions added yet. Use the form to add questions to this quiz.
+        </p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

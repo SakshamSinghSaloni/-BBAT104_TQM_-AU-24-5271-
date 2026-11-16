@@ -23,7 +23,7 @@ router = APIRouter(tags=["Questions"])
 def add_question(
     quiz_id: int, q_in: QuestionCreate, db: Session = Depends(get_db)
 ):
-    """Add a question to a quiz with Q06 Pre-add Validation and Search Before Add."""
+    """Add a question to a quiz with input validation and duplicate prevention."""
     service = QuestionService(db)
     try:
         return service.add_question(

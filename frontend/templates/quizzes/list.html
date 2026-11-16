@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}Quiz Library{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Quiz Library</h1>
+    <p class="page-subtitle">Create, configure, and launch assessment quizzes.</p>
+  </div>
+</div>
+
+<div class="grid-2">
+  <!-- Create New Quiz Card -->
+  <div class="card" style="border-top: 4px solid var(--primary);">
+    <h2 class="card-title">Create New Quiz</h2>
+    <form action="/quizzes" method="post">
+      <div class="form-group">
+        <label for="title" class="form-label">Quiz Title <span style="color:var(--danger)">*</span></label>
+        <input type="text" id="title" name="title" class="form-control" placeholder="e.g. Introduction to Computer Science Midterm" required>
+        <div class="form-hint">Quiz titles must be unique across all quizzes.</div>
+      </div>
+
+      <div class="form-group">
+        <label for="description" class="form-label">Description (Optional)</label>
+        <textarea id="description" name="description" class="form-control" rows="3" placeholder="Instructions or syllabus topics covered..."></textarea>
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width: 100%;">
+        + Add Quiz
+      </button>
+    </form>
+  </div>
+
+  <!-- Information Card -->
+  <div class="card" style="background: #ffffff; border-left: 4px solid var(--warning);">
+    <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 0.75rem;">Data Integrity & Duplicate Prevention</h3>
+    <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">
+      When creating and managing quizzes:
+    </p>
+    <ul style="font-size: 0.88rem; color: var(--text-muted); padding-left: 1.25rem; line-height: 1.7;">
+      <li><strong>Whitespace Sanitization:</strong> Leading and trailing spaces are automatically trimmed.</li>
+      <li><strong>Input Validation:</strong> Empty titles or titles consisting solely of spaces are automatically rejected.</li>
+      <li><strong>Duplicate Detection:</strong> The database prevents duplicate titles and returns an immediate notice.</li>
+      <li><strong>Safe Deletions:</strong> Quiz deletions require explicit confirmation to prevent accidental loss of student work.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- Existing Quizzes Table -->
+<div class="card">
+  <div class="card-title">Existing Quizzes ({{ quizzes|length }})</div>
+
+  {% if quizzes %}
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Title & Description</th>
+          <th>Questions</th>
+          <th>Created</th>
+          <th style="text-align: right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for q in quizzes %}
+        <tr>
+          <td style="color: var(--text-muted); font-size: 0.85rem;">#{{ q.id }}</td>
+          <td>
+            <strong style="font-size: 1rem;">{{ q.title }}</strong>
+            {% if q.description %}
+              <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 0.2rem;">{{ q.description }}</div>
+            {% endif %}
+          </td>
+          <td>
+            <a href="/quizzes/{{ q.id }}/questions" style="text-decoration: none; font-weight: 600; color: var(--primary);">
+              {{ q.questions|length }} questions &rarr;
+            </a>
+          </td>
+          <td style="color: var(--text-muted); font-size: 0.85rem;">{{ q.created_at[:10] }}</td>
+          <td style="text-align: right;">
+            <div style="display: inline-flex; gap: 0.4rem;">
+              <form action="/quizzes/{{ q.id }}/sessions" method="post" style="display:inline;">
+                <button type="submit" class="btn btn-success btn-sm">Launch Session</button>
+              </form>
+              <a href="/quizzes/{{ q.id }}/questions" class="btn btn-secondary btn-sm">Questions</a>
+              <form action="/quizzes/{{ q.id }}/delete" method="post" style="display:inline;" data-confirm="Are you sure you want to delete '{{ q.title }}'? This will permanently delete all questions and student sessions." data-confirm-title="Delete Quiz">
+                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    <p style="text-align: center; color: var(--text-muted); padding: 2.5rem;">
+      No quizzes found. Use the form above to add your first quiz!
+    </p>
+  {% endif %}
+</div>
+{% endblock %}

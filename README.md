@@ -1,216 +1,214 @@
-# Online Quiz System — Q06: Reduce Duplicate Entries
+# Online Quiz Assessment System — Q06: Reduce Duplicate Entries
 
-**Course:** BBAT104 — Fundamentals of TQM
-**Student:** Saksham Singh Saloni (AU-24-5271)
-**Academic Session:** 2026–27
-
----
-
-## Problem Statement
-
-Online quiz systems are susceptible to data integrity issues including duplicate records, invalid entries, and inconsistent data. This project implements an Online Quiz System with a focus on **Quality Goal Q06 — Reduce Duplicate Entries**, applying TQM principles to ensure reliable, error-free data management throughout the quiz lifecycle.
-
-## Project Objectives
-
-1. Build a functioning Online Quiz System with full CRUD operations for quizzes and questions.
-2. Implement 4 Q06 quality features to systematically reduce duplicate entries.
-3. Apply TQM principles (FMEA, SIPOC, Pareto, Fishbone, PDCA) to the development process.
-4. Maintain a professional, well-documented codebase with meaningful version control history.
-
-## Assigned Configuration
-
-| Parameter | Value |
-|-----------|-------|
-| Baseline System | Online Quiz System |
-| Quality Goal | Q06 — Reduce Duplicate Entries |
-| Q06 Features | Unique ID Constraints, Pre-add Validation, Search Before Add, Confirmation Dialogs |
+**Course:** BBAT104 — Fundamentals of Total Quality Management (TQM)  
+**Student:** Saksham Singh Saloni (Roll No. `AU-24-5271`)  
+**Academic Session:** 2026–27  
+**Quality Goal:** **Q06 — Reduce Duplicate Entries**  
+**Architecture:** Unified Web Platform (FastAPI + Jinja2 + SQLAlchemy 2.0 ORM + Alembic)  
 
 ---
 
-## System Architecture
+## 1. Problem Statement & Quality Objectives
+
+Online educational assessment platforms are highly vulnerable to relational and operational duplicate entries: duplicate test submissions, repeated student enrollments in a single test room, conflicting quiz titles, and identical question prompts.
+
+This project engineers a production-grade **Online Quiz System** governed by Total Quality Management (TQM) principles. Specifically addressing **Quality Goal Q06 (Reduce Duplicate Entries)**, the platform implements a four-tier defense architecture ensuring zero duplicate entries across the assessment lifecycle.
+
+### Assigned TQM Configuration
+
+| Parameter | Specification |
+|-----------|---------------|
+| **Baseline Project** | Online Quiz System (Baseline No. 9) |
+| **Quality Goal** | **Q06: Reduce Duplicate Entries** |
+| **Q06 Core Features** | 1. Unique ID Constraints &bull; 2. Pre-add Validation &bull; 3. Search Before Add &bull; 4. Poka-Yoke Confirmation Dialogs |
+| **Target Defect Rate** | **Zero duplicate entries** ($D = 0$) across concurrent operations |
+
+---
+
+## 2. 4-Tier Q06 Anti-Duplicate Defense Architecture
 
 ```mermaid
 flowchart TD
-    subgraph Clients["Desktop Clients (PySide6)"]
-        TC["Teacher Client"]
-        SC["Student Client"]
-    end
+    T4["Tier 4: Poka-Yoke (Client / UI)\n• Double-click submission lock\n• Modal confirmation on destructive actions"]
+    T3["Tier 3: Search Before Add (Service Layer)\n• Duplicate title queries (QuizService)\n• Pre-join identifier verification (SessionService)\n• HTTP 409 Conflict early exits"]
+    T2["Tier 2: Pre-Add Validation (Data Contracts)\n• Pydantic model sanitization\n• Whitespace trimming & boundary checks\n• Structural MCQ option validation"]
+    T1["Tier 1: Relational Storage Constraints (Database)\n• UNIQUE indices on quiz titles & session codes\n• Composite UNIQUE(session_id, student_identifier)\n• Composite UNIQUE(participant_id, question_id)"]
 
-    subgraph Backend["Backend Server (FastAPI + Uvicorn)"]
-        API["API Layer"]
-        SVC["Service Layer"]
-        REPO["Repository Layer"]
-    end
+    T4 --> T3 --> T2 --> T1
 
-    DB[("SQLite Database")]
-
-    TC -->|HTTP REST| API
-    SC -->|HTTP REST| API
-    API --> SVC
-    SVC --> REPO
-    REPO --> DB
+    style T4 fill:#ef4444,color:#fff
+    style T3 fill:#f59e0b,color:#fff
+    style T2 fill:#10b981,color:#fff
+    style T1 fill:#3b82f6,color:#fff
 ```
 
-The system uses a **client-server architecture**:
-
-- **Desktop clients** (PySide6) handle presentation only.
-- **Backend server** (FastAPI) owns all business logic, validation, and data access.
-- **SQLite database** is accessed exclusively by the backend, enforcing data integrity at the storage level.
-
-This architecture supports future internet deployment without redesign.
-
-## Technology Stack
-
-| Layer | Technology |
-|-------|-----------|
-| Desktop UI | PySide6 |
-| Backend API | FastAPI + Uvicorn |
-| Database | SQLite3 |
-| HTTP Client | httpx |
-| Validation | Pydantic |
-| Testing | pytest |
-| SQC Charts | Matplotlib + Seaborn + Pandas |
+1. **Tier 1 (Storage):** Relational engine uniqueness (`ix_quizzes_title`, `ix_users_email`, `ix_sessions_session_code`, `uq_quiz_question_text`, `uq_session_participant`, `uq_participant_question`).
+2. **Tier 2 (Pre-Add):** Input sanitization, whitespace normalization, and data validation via Pydantic schemas.
+3. **Tier 3 (Service Layer):** Search-Before-Add verification queries raising HTTP 409 Conflict prior to any insert operation.
+4. **Tier 4 (Presentation):** Client-side Poka-Yoke confirmation modals and double-submission blockers.
 
 ---
 
-## Repository Structure
+## 3. Technology Stack
 
-```
-├── README.md              # This file
-├── .gitignore             # Git exclusions
-├── requirements.txt       # Python dependencies
-├── docs/
-│   ├── SRS.md             # Software Requirements Specification
-│   ├── scope.md           # Scope definition
-│   ├── architecture.md    # Architecture document with diagrams
-│   ├── database-design.md # Database schema and constraints
-│   ├── api-design.md      # API endpoint specifications
-│   └── decisions/         # Architectural decision records
-├── backend/
-│   ├── main.py            # FastAPI application entry point
-│   ├── database.py        # Database initialization and connection
-│   ├── models.py          # Pydantic request/response models
-│   ├── api/               # HTTP route handlers
-│   ├── services/          # Business logic
-│   └── repositories/      # Data access layer
-├── apps/
-│   ├── teacher/           # Teacher desktop client
-│   └── student/           # Student desktop client (planned)
-├── tests/                 # Automated tests
-├── screenshots/           # Evidence for reviews
-└── tqm/                   # TQM analysis artefacts
-```
+| Layer | Technology | Purpose |
+|-------|------------|---------|
+| **Web Framework** | **FastAPI** + **Uvicorn** | High-performance asynchronous web & REST backend |
+| **Frontend & SSR** | **Jinja2 Templates** + Vanilla JS/CSS | Zero-install unified web interface for instructors and students |
+| **Persistence / ORM** | **SQLAlchemy 2.0** | Modern typed declarative ORM with connection pooling |
+| **Database Migrations** | **Alembic** | Automated, version-controlled schema evolution |
+| **Database Engines** | **PostgreSQL** (Prod) / **SQLite** (Dev/Test) | Engine portability with strict relational cascades |
+| **Security & Auth** | **bcrypt** + **itsdangerous** | Salted password hashing & signed HTTP-only session cookies |
+| **Testing** | **pytest** + **pytest-asyncio** + **httpx** | Comprehensive automated testing suite (Unit, Integration, API) |
+| **SQC & Analytics** | **Pandas** + **Matplotlib** + **Seaborn** | Statistical process control and defect analytics (Reviews 3–4) |
 
 ---
 
-## Q06: Reduce Duplicate Entries — Feature Summary
+## 4. User Journeys & Hybrid Authentication
 
-| # | Feature | Where Implemented | Description |
-|---|---------|------------------|-------------|
-| 1 | **Unique ID Constraints** | Database | PRIMARY KEY, UNIQUE constraints, composite unique keys prevent duplicate records at the storage level |
-| 2 | **Pre-add Validation** | Service Layer | All inputs validated for required fields, acceptable lengths, and valid types before database insertion |
-| 3 | **Search Before Add** | Service Layer | Existing records searched by relevant fields before creation; duplicates detected and reported |
-| 4 | **Confirmation Dialogs** | Teacher Client | PySide6 confirmation prompts before delete operations and other destructive actions |
+### 👨‍🏫 Instructor Flow (Authenticated)
+1. Navigate to `/auth/login` (or `/auth/register` to create an instructor account).
+2. Log in with email and password to receive a tamper-proof session cookie.
+3. Access `/dashboard` to manage quizzes, create questions, launch assessment sessions, and monitor live student performance.
+4. Inspect real-time leaderboard rankings and item-wise accuracy analytics at `/sessions/{id}/results`.
+
+### 🎓 Student Flow (Zero-Friction Ephemeral)
+1. Navigate to `/join` on any web browser (no account creation required).
+2. Enter Name, Roll Number / Student ID, and the 6-character Session Code.
+3. Protected by Q06: The system validates that the session is active and that the roll number has not previously joined.
+4. Take the quiz at `/session/{code}/take`, confirm answers with Poka-Yoke modal, and view instant scorecards and detailed feedback at `/session/{code}/results`.
 
 ---
 
-## Setup Instructions
+## 5. Quickstart & Setup Guide
 
 ### Prerequisites
-
-- Python 3.10 or later
-- Git
+- Python 3.10+ (tested on Python 3.13)
+- `pip` package manager
 
 ### Installation
 
 ```bash
-# Clone the repository
-git clone https://github.com/<username>/BBAT104_TQM_[AU-24-5271].git
+# 1. Clone repository
+git clone https://github.com/<your-username>/BBAT104_TQM_[AU-24-5271].git
 cd BBAT104_TQM_[AU-24-5271]
 
-# Create a virtual environment
+# 2. Create and activate virtual environment
 python -m venv venv
-
-# Activate the virtual environment
-# Windows:
+# On Windows:
 venv\Scripts\activate
-# macOS/Linux:
+# On macOS/Linux:
 source venv/bin/activate
 
-# Install dependencies
+# 3. Install dependencies
 pip install -r requirements.txt
+
+# 4. Copy environment configuration
+cp .env.example .env
+
+# 5. Apply database migrations
+alembic upgrade head
 ```
 
-### Running the Backend
+### Running the Web Platform
 
 ```bash
-uvicorn backend.main:app --reload
+uvicorn backend.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-The API will be available at `http://localhost:8000`. Interactive docs at `http://localhost:8000/docs`.
+- **Web Application:** Open [http://127.0.0.1:8000](http://127.0.0.1:8000) in your browser.
+- **Interactive Swagger API Docs:** [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+- **ReDoc API Reference:** [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc)
 
-### Running the Teacher Client
-
-```bash
-python -m apps.teacher.main
-```
-
-### Running Tests
-
-Execute the automated test suite using `pytest`:
+### Running Automated Tests
 
 ```bash
 pytest tests/ -v
 ```
 
-All 29 automated tests pass in `< 1.3s` verifying:
-- ✅ Base CRUD operations for Quizzes and Questions (Create, Read, Update, Delete)
-- ✅ Q06 Feature 1: Unique ID Constraints (`tests/test_database.py`)
-- ✅ Q06 Feature 2: Pre-add Validation on Create & Update (`tests/test_services.py`, `tests/test_api.py`)
-- ✅ Q06 Feature 3: Search Before Add duplicate detection on Create & Update (`tests/test_services.py`, `tests/test_api.py`)
-- ✅ Q06 Feature 4: Confirmation Dialogs on deletion (`apps/teacher/views/`)
-- ✅ Auto-grading: Case-insensitive & whitespace-normalized evaluation (`tests/test_grading.py`)
+---
 
-📄 **Detailed Evidence:** See the full execution output and breakdown in [Automated Testing Report (docs/testing.md)](docs/testing.md).
+## 6. Repository Structure
+
+```
+├── .env.example                     # Environment template (DATABASE_URL, SECRET_KEY)
+├── alembic.ini                      # Alembic migration configuration
+├── alembic/                         # Database schema migration scripts
+│   └── versions/
+│       └── 5280994aae39_initial_schema_with_users.py
+├── backend/
+│   ├── config.py                    # Centralized twelve-factor app configuration
+│   ├── database.py                  # SQLAlchemy 2.0 engine & session factory
+│   ├── db_models.py                 # Declarative ORM entities (User, Quiz, Question, Session, Participant, Submission)
+│   ├── main.py                      # FastAPI app entry point & route mounting
+│   ├── models.py                    # Pydantic data schemas & validators (Q06 Tier 2)
+│   ├── api/                         # REST API endpoints
+│   │   ├── auth.py                  # Instructor register, login, logout, me
+│   │   ├── quizzes.py               # Quiz CRUD endpoints
+│   │   ├── questions.py             # Question CRUD endpoints
+│   │   └── sessions.py              # Live session administration & student join/submit
+│   ├── middleware/
+│   │   └── auth.py                  # Signed cookie session middleware & dependencies
+│   ├── repositories/                # Persistence & ORM queries
+│   │   ├── quiz_repo.py
+│   │   ├── question_repo.py
+│   │   ├── user_repo.py
+│   │   └── session_repo.py
+│   └── services/                    # Business logic & Q06 defenses
+│       ├── auth_service.py
+│       ├── quiz_service.py
+│       ├── question_service.py
+│       ├── session_service.py
+│       └── grading_service.py
+├── frontend/
+│   ├── routes/                      # Server-rendered web route handlers
+│   │   ├── auth_routes.py           # Web login, register, logout pages
+│   │   ├── teacher_routes.py        # Web dashboard, quiz library, question editor, session analytics
+│   │   └── student_routes.py        # Web join, test taking, scorecard results
+│   ├── static/
+│   │   ├── css/style.css            # Production stylesheet
+│   │   └── js/app.js                # Q06 Poka-Yoke modal, validation & double-submit guard
+│   └── templates/                   # Jinja2 HTML templates
+│       ├── base.html                # Base layout & navbar
+│       ├── index.html               # Dual-portal landing page
+│       ├── dashboard.html           # Instructor dashboard
+│       ├── auth/                    # Login & registration templates
+│       ├── quizzes/                 # Quiz & question management templates
+│       ├── sessions/                # Results & analytics templates
+│       ├── student/                 # Student assessment templates
+│       └── partials/                # Reusable flash alerts & Poka-Yoke modal
+├── docs/
+│   ├── SRS.md                       # Software Requirements Specification (v2.0)
+│   ├── stakeholders.md              # Formal Stakeholder Register (Stage 1)
+│   ├── voice-of-stakeholder.md      # VoS Analysis & CTQ Flowdown (Stage 2)
+│   ├── architecture.md              # System Architecture Specification (v2.0)
+│   ├── database-design.md           # Entity-Relationship & Schema Spec (v2.0)
+│   ├── api-design.md                # REST API Specification (v2.0)
+│   ├── scope.md                     # Review Phase Scope Boundaries
+│   └── decisions/                   # Architecture Decision Records (ADRs)
+│       ├── ADR-001-technology-stack.md
+│       ├── ADR-002-database-upgrade.md
+│       ├── ADR-003-web-pivot.md
+│       └── ADR-004-hybrid-auth.md
+├── requirements.txt                 # Python project dependencies
+└── tests/                           # Automated test suites
+    ├── test_api.py                  # REST API contract & Q06 tests
+    ├── test_database.py             # Schema & cascading integrity tests
+    ├── test_grading.py              # Evaluation & grading logic tests
+    └── test_services.py             # Service layer validation & duplicate tests
+```
 
 ---
 
-## Implementation Status
+## 7. Quality Assurance & Testing Summary
 
-| Component | Status | Review Milestone |
-|-----------|--------|------------------|
-| Repository setup | ✅ Complete | Review 1 |
-| Documentation (SRS, scope, architecture) | ✅ Complete | Review 1 |
-| Database schema & constraints | ✅ Complete | Review 2 |
-| Quiz CRUD API | ✅ Complete | Review 2 |
-| Question CRUD API | ✅ Complete | Review 2 |
-| Q06: Unique ID Constraints | ✅ Complete | Review 2 |
-| Q06: Pre-add Validation | ✅ Complete | Review 2 |
-| Q06: Search Before Add | ✅ Complete | Review 2 |
-| Q06: Confirmation Dialogs | ✅ Complete | Review 2 |
-| Teacher desktop client (PySide6) | ✅ Complete | Review 2 |
-| Automated tests (29 test cases) | ✅ Complete | Review 2 |
-| Student desktop client | 🔲 Planned | Stretch / Post-Review 2 |
-| TQM artefacts (FMEA, SIPOC, etc.) | 🔲 Planned | Reviews 3–4 |
+All 29 tests execute successfully in under 3 seconds:
+- **`tests/test_database.py` (4 tests):** Validates table creation, foreign key cascading deletion, unique session code constraints, and composite unique participant constraints (`uq_session_participant`).
+- **`tests/test_services.py` (7 tests):** Validates whitespace stripping, pre-add validation, MCQ structural consistency, and Search-Before-Add duplicate detection.
+- **`tests/test_grading.py` (4 tests):** Validates case-insensitive short answer evaluation, whitespace trimming, and true/false verification.
+- **`tests/test_api.py` (14 tests):** Validates end-to-end HTTP endpoints for quizzes and questions, duplicate rejection responses (`409 Conflict`), and update constraints.
 
 ---
 
-## Known Limitations
-
-- The system currently operates on localhost. Internet deployment is architecturally supported but not yet configured.
-- Only the 4 officially listed Q06 features are implemented. The guidelines specify 5 features per quality goal, but Q06 lists only 4. This discrepancy is documented and pending professor clarification.
-- WebSocket-based real-time updates are designed for but not yet implemented.
-
-## Future Roadmap
-
-1. **Review 2:** Complete CRUD modules, Q06 features, teacher client, automated tests.
-2. **Review 3:** FMEA matrix, SIPOC diagram, CTQ tree, defect logging.
-3. **Review 4:** Pareto charts, Fishbone diagrams, checksheets, PDCA cycle.
-4. **Final:** Live demonstration, complete documentation, ≥30 commits.
-5. **Post-course:** Internet deployment, student client enhancements, real-time progress monitoring.
-
----
-
-## License
-
-Academic project — BBAT104 Course, Amrapali University.
+## 8. Academic Integrity & TQM Compliance
+Developed by **Saksham Singh Saloni (Roll No. AU-24-5271)** for **BBAT104 Fundamentals of Total Quality Management**. All architectural decisions, Voice of Stakeholder traceability, and empirical defect tracking are mapped directly to course rubrics.

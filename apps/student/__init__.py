@@ -1,1 +1,0 @@
-# Student desktop application (planned)

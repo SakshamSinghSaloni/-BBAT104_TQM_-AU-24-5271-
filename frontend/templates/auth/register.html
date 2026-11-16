@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Register Instructor{% endblock %}
+
+{% block content %}
+<div style="max-width: 460px; margin: 3rem auto;">
+  <div class="card" style="border-top: 4px solid var(--success); padding: 2rem;">
+    <h1 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; text-align: center;">Register Instructor Account</h1>
+    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.75rem; text-align: center;">
+      Create an account to configure quizzes and launch live classroom sessions.
+    </p>
+
+    <form action="/auth/register" method="post">
+      <div class="form-group">
+        <label for="name" class="form-label">Full Name</label>
+        <input type="text" id="name" name="name" class="form-control" placeholder="Prof. Jane Doe" required autofocus>
+      </div>
+
+      <div class="form-group">
+        <label for="email" class="form-label">Email Address</label>
+        <input type="email" id="email" name="email" class="form-control" placeholder="teacher@university.edu" required>
+        <div class="form-hint">An account with this email address cannot already exist.</div>
+      </div>
+
+      <div class="form-group">
+        <label for="password" class="form-label">Password</label>
+        <input type="password" id="password" name="password" class="form-control" placeholder="At least 6 characters" minlength="6" required>
+      </div>
+
+      <button type="submit" class="btn btn-success btn-lg" style="width: 100%; margin-top: 0.5rem;">
+        Create Account
+      </button>
+    </form>
+
+    <div style="text-align: center; margin-top: 1.5rem; font-size: 0.88rem; color: var(--text-muted);">
+      Already have an account? <a href="/auth/login" style="color: var(--primary); font-weight: 600; text-decoration: none;">Log in</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

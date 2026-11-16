@@ -1,9 +1,5 @@
 """
 Business logic service for Question management.
-
-Enforces:
-- Parent Quiz existence check
-- Q06 Feature 3: Search Before Add (searches for identical question text in the same quiz)
 """
 
 from __future__ import annotations
@@ -32,14 +28,14 @@ class QuestionService:
     ) -> Dict[str, Any]:
         """
         Add a question to a quiz.
-        Validates parent quiz existence and performs Q06 Search Before Add.
+        Validates parent quiz existence and performs duplicate prevention.
         """
         # 1. Verify parent quiz exists
         quiz = self.quiz_repo.get_by_id(quiz_id)
         if not quiz:
             raise KeyError(f"Quiz with ID {quiz_id} not found.")
 
-        # 2. Q06 Feature 3: Search Before Add (Strict Duplicate Prevention)
+        # 2. Duplicate Prevention check
         duplicate_matches = self.question_repo.find_duplicate_in_quiz(quiz_id, question_text)
         if duplicate_matches:
             raise ValueError(
@@ -78,7 +74,7 @@ class QuestionService:
         if not existing:
             return None
 
-        # Q06 Feature 3: Search Before Add (Strict Duplicate Prevention on question update)
+        # Duplicate Prevention on question update
         if question_text is not None and question_text.strip().lower() != existing["question_text"].strip().lower():
             duplicates = self.question_repo.find_duplicate_in_quiz(existing["quiz_id"], question_text)
             other_duplicates = [d for d in duplicates if d["id"] != question_id]
@@ -87,7 +83,7 @@ class QuestionService:
                     f"An identical question already exists in this quiz (Question #{other_duplicates[0]['id']}). Duplicate questions are not allowed."
                 )
 
-        # Q06 Feature 2: Pre-add Validation (cross-field consistency on MCQ update)
+        # Cross-field consistency on MCQ update
         final_options = options if options is not None else existing.get("options")
         final_answer = correct_answer if correct_answer is not None else existing["correct_answer"]
         question_type = existing.get("question_type", "mcq")

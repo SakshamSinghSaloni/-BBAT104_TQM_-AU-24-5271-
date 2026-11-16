@@ -28,9 +28,9 @@
 **Implementation scope:**
 - Backend API endpoints (FastAPI) for all CRUD operations.
 - Service layer with business logic and validation.
-- Repository layer with SQL queries and transaction handling.
-- SQLite database with schema, constraints, and foreign keys.
-- Teacher desktop client (PySide6) providing a GUI for all CRUD operations.
+- Repository layer with SQLAlchemy 2.0 ORM queries and transaction handling.
+- PostgreSQL / SQLite database with schema, constraints, cascading foreign keys, and Alembic migrations.
+- Unified Web Application (FastAPI + Jinja2 + Vanilla JS/CSS) providing a complete interface for both Instructors and Students.
 
 ### 2.2 Q06 Quality Goal Features (4 features)
 
@@ -39,7 +39,7 @@
 | 1 | **Unique ID Constraints** | Database-level PRIMARY KEY, UNIQUE constraints, and composite unique keys preventing duplicate records |
 | 2 | **Pre-add Validation** | Server-side validation of all required fields, data types, and acceptable ranges before any INSERT |
 | 3 | **Search Before Add** | Service-layer duplicate-detection queries before creating records; documented duplicate definitions per entity |
-| 4 | **Confirmation Dialogs** | PySide6 confirmation prompts before delete operations and other destructive actions |
+| 4 | **Confirmation Dialogs** | Accessible Poka-Yoke modal prompts before delete operations, session terminations, and test submissions |
 
 ### 2.3 Stretch goals for Review 2 (if time permits)
 

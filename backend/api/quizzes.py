@@ -17,7 +17,7 @@ router = APIRouter(prefix="/api/quizzes", tags=["Quizzes"])
 
 @router.post("", response_model=QuizResponse, status_code=status.HTTP_201_CREATED)
 def create_quiz(quiz_in: QuizCreate, db: Session = Depends(get_db)):
-    """Create a new quiz with Q06 Pre-add Validation and Search Before Add."""
+    """Create a new quiz with input validation and duplicate prevention."""
     service = QuizService(db)
     try:
         return service.create_quiz(title=quiz_in.title, description=quiz_in.description)

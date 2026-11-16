@@ -1,216 +1,140 @@
-# API Design
+# API Design Specification
 
-**Project:** Online Quiz System — Q06: Reduce Duplicate Entries
-**Version:** 1.0 | **Date:** 2026-10-11
-**Base URL:** `http://localhost:8000`
-
----
-
-## 1. Quiz Endpoints
-
-### POST /api/quizzes — Create a quiz
-
-- **Purpose:** Create a new quiz record.
-- **Request body:**
-  ```json
-  {
-    "title": "Python Basics Quiz",
-    "description": "A quiz covering fundamental Python concepts"
-  }
-  ```
-- **Validation (Q06: Pre-add Validation):**
-  - `title` is required and must not be blank or whitespace-only.
-  - `title` max length: 200 characters.
-  - `description` is optional; max length: 1000 characters.
-- **Duplicate check (Q06: Search Before Add):**
-  - Strict: checks if a quiz with identical title already exists (case-insensitive). Blocks creation and returns 409 Conflict.
-- **Success response:** `201 Created`
-  ```json
-  {
-    "id": 1,
-    "title": "Python Basics Quiz",
-    "description": "A quiz covering fundamental Python concepts",
-    "question_count": 0,
-    "created_at": "2026-10-11T18:00:00",
-    "updated_at": "2026-10-11T18:00:00"
-  }
-  ```
-- **Error responses:**
-  - `409 Conflict` — duplicate quiz title detected (Q06: Search Before Add).
-  - `422 Unprocessable Entity` — validation failure (missing/blank title).
+**Project:** Online Quiz System — Q06: Reduce Duplicate Entries  
+**Version:** 2.0 | **Date:** 2026-11-16  
+**Base URL:** `http://localhost:8000`  
+**Authentication:** Signed HTTP-Only Session Cookie or `Authorization: Bearer <token>`  
 
 ---
 
-### GET /api/quizzes — List all quizzes
+## 1. Authentication Endpoints (`/api/auth`)
 
+### POST /api/auth/register — Register Teacher
+- **Purpose:** Create an instructor account.
+- **Payload:** `{"name": "Prof. Smith", "email": "smith@univ.edu", "password": "securepassword"}`
+- **Q06 Defense:** Pre-add validation checks non-empty name and email format; Search-Before-Add rejects duplicate email addresses (`409 Conflict`).
+- **Response:** `201 Created` with User object + sets HTTP-only session cookie.
+
+### POST /api/auth/login — Login Teacher
+- **Purpose:** Authenticate teacher and establish session.
+- **Payload:** `{"email": "smith@univ.edu", "password": "securepassword"}`
+- **Response:** `200 OK` with User object + sets HTTP-only session cookie.
+- **Error:** `401 Unauthorized` on invalid credentials.
+
+### POST /api/auth/logout — Logout
+- **Purpose:** Invalidate session.
+- **Response:** `200 OK` + clears session cookie.
+
+### GET /api/auth/me — Current User
+- **Purpose:** Return current authenticated user profile.
+- **Response:** `200 OK` with User object.
+
+---
+
+## 2. Quiz Endpoints (`/api/quizzes`)
+
+### POST /api/quizzes — Create Quiz
+- **Purpose:** Create a new quiz entity.
+- **Payload:** `{"title": "TQM Fundamentals", "description": "Course Midterm"}`
+- **Q06 Defense:** Rejects whitespace-only titles (`422`); rejects duplicate titles (`409 Conflict`).
+- **Response:** `201 Created`
+
+### GET /api/quizzes — List Quizzes
 - **Purpose:** Retrieve all quizzes.
+- **Response:** `200 OK` array of quizzes with `question_count`.
+
+### GET /api/quizzes/{quiz_id} — Get Quiz Details
+- **Response:** `200 OK` with quiz object. `404 Not Found` if missing.
+
+### PUT /api/quizzes/{quiz_id} — Update Quiz
+- **Payload:** `{"title": "Updated Title", "description": "Optional"}`
+- **Q06 Defense:** Rejects duplicate titles (`409 Conflict`).
+
+### DELETE /api/quizzes/{quiz_id} — Delete Quiz
+- **Purpose:** Cascade deletes quiz, child questions, sessions, participants, and submissions.
 - **Response:** `200 OK`
-  ```json
-  [
-    {
-      "id": 1,
-      "title": "Python Basics Quiz",
-      "description": "...",
-      "question_count": 5,
-      "created_at": "2026-10-11T18:00:00",
-      "updated_at": "2026-10-11T18:00:00"
-    }
-  ]
-  ```
-- Returns an empty array `[]` if no quizzes exist.
 
 ---
 
-### GET /api/quizzes/{quiz_id} — Get quiz details
+## 3. Question Endpoints (`/api/questions`)
 
-- **Purpose:** Retrieve a single quiz by ID.
-- **Response:** `200 OK` with quiz object.
-- **Error:** `404 Not Found` if quiz does not exist.
-
----
-
-### PUT /api/quizzes/{quiz_id} — Update a quiz
-
-- **Purpose:** Update title and/or description of an existing quiz.
-- **Request body:**
+### POST /api/quizzes/{quiz_id}/questions — Add Question
+- **Payload:**
   ```json
   {
-    "title": "Updated Title",
-    "description": "Updated description"
-  }
-  ```
-- **Validation:** Same as creation.
-- **Response:** `200 OK` with updated quiz object.
-- **Errors:**
-  - `404 Not Found` — quiz does not exist.
-  - `409 Conflict` — new title duplicates an existing quiz title (Q06: Search Before Add).
-  - `422 Unprocessable Entity` — validation failure.
-
----
-
-### DELETE /api/quizzes/{quiz_id} — Delete a quiz
-
-- **Purpose:** Delete a quiz and cascade to its questions and sessions.
-- **Note:** The desktop client shows a confirmation dialog before calling this endpoint (Q06: Confirmation Dialogs).
-- **Response:** `200 OK`
-  ```json
-  { "message": "Quiz deleted successfully" }
-  ```
-- **Error:** `404 Not Found` — quiz does not exist.
-
----
-
-## 2. Question Endpoints
-
-### POST /api/quizzes/{quiz_id}/questions — Add a question
-
-- **Purpose:** Add a question to a specific quiz.
-- **Request body:**
-  ```json
-  {
-    "question_text": "What is the output of print(2 + 3)?",
+    "question_text": "What is the primary goal of Q06?",
     "question_type": "mcq",
-    "options": ["3", "5", "23", "Error"],
-    "correct_answer": "5",
-    "points": 2
+    "options": ["Reduce Defective Code", "Reduce Duplicate Entries", "Speed Up UI"],
+    "correct_answer": "Reduce Duplicate Entries",
+    "points": 1,
+    "order_index": 0
   }
   ```
-- **Validation (Q06: Pre-add Validation):**
-  - `question_text` is required, non-blank, max 2000 characters.
-  - `question_type` must be one of: `mcq`, `true_false`, `short_answer`.
-  - For `mcq`: `options` must be a non-empty list of 2–6 options.
-  - `correct_answer` is required and must be non-blank.
-  - For `mcq`: `correct_answer` must match one of the `options`.
-  - `points` must be a positive integer (default: 1).
-- **Duplicate check (Q06: Search Before Add):**
-  - Strict: checks if a question with identical `question_text` already exists in the same quiz. Blocks creation and returns 409 Conflict.
-- **Response:** `201 Created` with question object.
-- **Errors:**
-  - `404 Not Found` — parent quiz does not exist.
-  - `409 Conflict` — duplicate question in quiz (Q06: Search Before Add).
-  - `422 Unprocessable Entity` — validation failure.
+- **Q06 Defense:** Pre-add validation checks MCQ options and inclusion of correct answer; Search-Before-Add rejects identical question prompts within the same quiz (`409 Conflict`).
+- **Response:** `201 Created`
 
----
+### GET /api/quizzes/{quiz_id}/questions — List Questions
+- **Response:** `200 OK` array of questions.
 
-### GET /api/quizzes/{quiz_id}/questions — List questions for a quiz
-
-- **Response:** `200 OK` with array of question objects (ordered by `order_index`).
-- **Error:** `404 Not Found` — quiz does not exist.
-
----
-
-### GET /api/questions/{question_id} — Get question details
-
-- **Response:** `200 OK` with question object.
-- **Error:** `404 Not Found`.
-
----
-
-### PUT /api/questions/{question_id} — Update a question
-
-- **Request body:** Same fields as creation (all optional for partial update).
-- **Validation:** Same rules as creation for provided fields.
+### PUT /api/questions/{question_id} — Update Question
 - **Response:** `200 OK` with updated question.
-- **Errors:**
-  - `404 Not Found` — question does not exist.
-  - `409 Conflict` — updated text duplicates another question in the quiz or answer not in options (Q06: Search Before Add / Pre-add Validation).
-  - `422 Unprocessable Entity` — invalid data formats.
+
+### DELETE /api/questions/{question_id} — Delete Question
+- **Response:** `200 OK`
 
 ---
 
-### DELETE /api/questions/{question_id} — Delete a question
+## 4. Session & Assessment Endpoints (`/api/sessions`)
 
-- **Note:** Confirmation dialog shown by client before calling.
-- **Response:** `200 OK` with success message.
-- **Error:** `404 Not Found`.
+### POST /api/sessions — Launch Session
+- **Purpose:** Instructor starts a live assessment session.
+- **Payload:** `{"quiz_id": 1}`
+- **Response:** `201 Created` with generated 6-character collision-free `session_code` (e.g. `"7X3K9P"`).
 
----
+### GET /api/sessions — List Sessions
+- **Purpose:** List all active and past sessions.
+- **Response:** `200 OK`
 
-## 3. Session Endpoints (Planned — Stretch for Review 2)
+### POST /api/sessions/{session_id}/end — End Session
+- **Purpose:** Close session to new joins and submissions.
+- **Response:** `200 OK` with updated status `"ended"`.
 
-| Method | Route | Purpose |
-|--------|-------|---------|
-| POST | `/api/sessions` | Start a new quiz session |
-| POST | `/api/sessions/{code}/join` | Student joins a session |
-| POST | `/api/sessions/{session_id}/submit` | Submit answers |
-| PATCH | `/api/sessions/{session_id}/end` | End a session |
-| GET | `/api/sessions/{session_id}/results` | View results |
-| GET | `/api/sessions/{session_id}/participants` | List participants |
-
-These endpoints are documented but implementation is deferred to stretch/future scope.
+### GET /api/sessions/{session_id}/results — Session Analytics
+- **Purpose:** Aggregated analytics for instructors.
+- **Response:** `200 OK` with `leaderboard`, `question_stats`, `average_score`, `highest_score`.
 
 ---
 
-## 4. Common Error Response Format
+## 5. Student Ephemeral Endpoints
 
-All error responses follow a consistent shape:
+### POST /api/sessions/{session_code}/join — Join Session
+- **Purpose:** Ephemeral student registration.
+- **Payload:** `{"student_name": "Saksham Saloni", "student_identifier": "AU-24-5271"}`
+- **Q06 Defense:** Pre-add validation on non-empty values; Search-Before-Add rejects duplicate joins by the same Roll Number in this session (`409 Conflict`).
+- **Response:** `201 Created` with `ParticipantResponse`.
 
-```json
-{
-  "detail": "Quiz not found"
-}
-```
+### GET /api/sessions/{session_code}/questions — Fetch Questions
+- **Purpose:** Retrieve test items for the active session. Omits `correct_answer` to preserve exam security.
+- **Response:** `200 OK` array of questions.
 
-For validation errors (422):
-```json
-{
-  "detail": [
-    {
-      "loc": ["body", "title"],
-      "msg": "Field required",
-      "type": "missing"
-    }
-  ]
-}
-```
+### POST /api/sessions/{session_code}/submit — Submit Answers
+- **Purpose:** Submit all answers for automated grading.
+- **Payload:**
+  ```json
+  {
+    "participant_id": 1,
+    "answers": [
+      {"question_id": 1, "answer_text": "Reduce Duplicate Entries"}
+    ]
+  }
+  ```
+- **Q06 Defense:** Search-Before-Add rejects duplicate quiz submissions from the same participant (`409 Conflict`).
+- **Response:** `200 OK` with `StudentQuizResult` containing total score, max score, percentage, and detailed evaluations.
 
 ---
 
-## 5. Auto-generated API Documentation
+## 6. Living Documentation
 
-FastAPI provides interactive documentation at:
-
+Interactive API explorers are served directly from the running backend:
 - **Swagger UI:** `http://localhost:8000/docs`
 - **ReDoc:** `http://localhost:8000/redoc`
-
-These are available automatically when the backend is running and serve as live API reference during development.

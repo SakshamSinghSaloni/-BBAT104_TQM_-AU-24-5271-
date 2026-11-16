@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Assessment Results{% endblock %}
+
+{% block content %}
+<div style="max-width: 760px; margin: 1rem auto 3rem;">
+  <!-- Result Scorecard -->
+  <div class="card" style="text-align: center; padding: 2.5rem 1.5rem; border-top: 5px solid {% if result.percentage >= 50 %}var(--success){% else %}var(--danger){% endif %};">
+    <span class="badge {% if result.percentage >= 50 %}badge-active{% else %}badge-ended{% endif %}" style="margin-bottom: 0.75rem;">
+      Evaluation Complete
+    </span>
+
+    <h1 style="font-size: 1.8rem; font-weight: 800; margin-bottom: 0.25rem;">
+      {{ result.student_name }}
+    </h1>
+    <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1.5rem;">
+      Roll Number: <code>{{ result.student_identifier }}</code> &bull; Session: <code>{{ session_code }}</code>
+    </p>
+
+    <div style="display: flex; justify-content: center; gap: 2rem; margin-bottom: 1.5rem;">
+      <div>
+        <div style="font-size: 2.8rem; font-weight: 800; color: {% if result.percentage >= 50 %}var(--success){% else %}var(--danger){% endif %}; line-height: 1;">
+          {{ result.total_score }} <span style="font-size: 1.5rem; color: var(--text-muted); font-weight: 400;">/ {{ result.max_score }}</span>
+        </div>
+        <div style="font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; margin-top: 0.4rem; font-weight: 600;">Total Score</div>
+      </div>
+
+      <div style="border-left: 1px solid var(--border-color); padding-left: 2rem;">
+        <div style="font-size: 2.8rem; font-weight: 800; color: var(--text-main); line-height: 1;">
+          {{ result.percentage }}%
+        </div>
+        <div style="font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; margin-top: 0.4rem; font-weight: 600;">Accuracy Rate</div>
+      </div>
+    </div>
+
+    <div style="margin-top: 1.5rem;">
+      <a href="/" class="btn btn-primary">Return to Home</a>
+    </div>
+  </div>
+
+  <!-- Detailed Review -->
+  <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem; color: var(--text-main);">
+    Question Review & Grading Breakdown
+  </h2>
+
+  {% for detail in result.details %}
+  <div class="card" style="border-left: 4px solid {% if detail.is_correct %}var(--success){% else %}var(--danger){% endif %}; margin-bottom: 1rem; padding: 1.25rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+      <span class="badge {% if detail.is_correct %}badge-active{% else %}badge-ended{% endif %}">
+        {% if detail.is_correct %}&#10003; Correct (+{{ detail.points_awarded }} pt){% else %}&#10007; Incorrect (0 pt){% endif %}
+      </span>
+      <span style="font-size: 0.8rem; color: var(--text-muted);">Max: {{ detail.max_points }} pt</span>
+    </div>
+
+    <p style="font-size: 0.98rem; font-weight: 600; margin-bottom: 0.75rem;">
+      {{ loop.index }}. {{ detail.question_text }}
+    </p>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; font-size: 0.88rem;">
+      <div style="background: #f8fafc; padding: 0.6rem 0.8rem; border-radius: 4px; border: 1px solid var(--border-color);">
+        <span style="color: var(--text-muted); font-size: 0.78rem; display: block;">Your Response:</span>
+        <strong style="color: {% if detail.is_correct %}#15803d{% else %}#b91c1c{% endif %};">{{ detail.submitted_answer or '(No answer)' }}</strong>
+      </div>
+
+      <div style="background: #f0fdf4; padding: 0.6rem 0.8rem; border-radius: 4px; border: 1px solid #bbf7d0;">
+        <span style="color: #166534; font-size: 0.78rem; display: block;">Correct Answer:</span>
+        <strong style="color: #15803d;">{{ detail.correct_answer }}</strong>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

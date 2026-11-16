@@ -82,7 +82,7 @@ class QuestionRepository:
         return [self._to_dict(q) for q in questions]
 
     def find_duplicate_in_quiz(self, quiz_id: int, question_text: str) -> List[Dict[str, Any]]:
-        """Used for Q06 Feature 3: Search Before Add."""
+        """Find question by text in a quiz to prevent duplicate prompts."""
         clean_text = question_text.strip()
         stmt = select(Question).where(
             Question.quiz_id == quiz_id,

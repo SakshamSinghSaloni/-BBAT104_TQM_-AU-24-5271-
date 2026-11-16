@@ -3,7 +3,7 @@ Database engine and session management for Online Quiz System using SQLAlchemy 2
 
 Enforces:
 - Foreign key constraints (PRAGMA foreign_keys = ON for SQLite, native FKs in PostgreSQL)
-- Q06 Feature 1: Unique ID Constraints at the database storage level
+- Relational constraints and foreign keys at the database storage level
 - Connection pooling and session lifecycle management
 """
 
@@ -54,7 +54,7 @@ def get_db() -> Generator[Session, None, None]:
 def init_db(target_engine: Engine | None = None) -> None:
     """
     Initialize all database tables with normalized schemas, indexes, and integrity constraints.
-    Enforces Q06 Feature 1: Unique ID Constraints.
+    Initializes all database tables.
     """
     eng = target_engine if target_engine is not None else engine
     Base.metadata.create_all(bind=eng)

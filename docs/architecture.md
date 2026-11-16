@@ -1,197 +1,157 @@
 # System Architecture
 
-**Project:** Online Quiz System — Q06: Reduce Duplicate Entries
-**Version:** 1.0 | **Date:** 2026-10-11
+**Project:** Online Quiz System — Q06: Reduce Duplicate Entries  
+**Version:** 2.0 | **Date:** 2026-11-16  
+**Stack:** FastAPI + Jinja2 Web Server | SQLAlchemy 2.0 ORM | PostgreSQL / SQLite  
 
 ---
 
 ## 1. Architecture Overview
 
-The Online Quiz System uses a **client-server architecture** where desktop clients communicate with a central backend over HTTP REST APIs. The backend is the single authority for data access, validation, grading, and duplicate prevention.
-
-### System Architecture Flowchart
+The Online Quiz System is built as a **unified server-rendered web application** with an integrated REST API. It eliminates external desktop dependencies, enabling instructors and students to interact seamlessly via standard web browsers.
 
 ```mermaid
 flowchart TD
-    subgraph Clients["Desktop Clients (PySide6)"]
-        TC["🧑‍🏫 Teacher Client"]
-        SC["🧑‍🎓 Student Client"]
+    subgraph Clients["Web Clients (Browser)"]
+        TC["🧑‍🏫 Instructor\n(/dashboard, /quizzes, /sessions)"]
+        SC["🧑‍🎓 Student\n(/join, /session/{code}/take)"]
     end
 
-    subgraph Backend["Backend Server (FastAPI + Uvicorn)"]
+    subgraph AppServer["Unified Application Server (FastAPI + Uvicorn)"]
         direction TB
-        API["API Layer\n(Route handlers, request/response)"]
-        SVC["Service Layer\n(Business logic, validation,\nduplicate detection, grading)"]
-        REPO["Repository Layer\n(SQL queries, transactions)"]
+        ROUTER["Router & Web Pages Layer\n(FastAPI + Jinja2 Templates)"]
+        MW["Security & Session Middleware\n(itsdangerous, bcrypt)"]
+        SVC["Service Layer\n(QuizService, QuestionService,\nSessionService, GradingService)"]
+        REPO["Repository Layer\n(SQLAlchemy 2.0 ORM)"]
     end
 
-    DB[("SQLite Database\n(Constraints, FK, UNIQUE)")]
+    subgraph Persistence["Persistence & Relational Integrity"]
+        DB[("Database Engine\nPostgreSQL (Production)\nSQLite (Dev/Test)")]
+        ALEMBIC["Alembic Migration Engine\n(Versioned DDL)"]
+    end
 
-    TC -->|"HTTP REST\n(CRUD, sessions)"| API
-    SC -->|"HTTP REST\n(join, submit)"| API
-    TC -.->|"WebSocket\n(planned: real-time updates)"| API
+    TC -->|"HTTP / HTTPS\n(Session Cookie)"| ROUTER
+    SC -->|"HTTP / HTTPS\n(Ephemeral Session Code)"| ROUTER
 
-    API --> SVC
+    ROUTER --> MW
+    MW --> SVC
     SVC --> REPO
     REPO --> DB
+    ALEMBIC -.->|"Auto-migrations"| DB
 
-    style TC fill:#4A90D9,color:#fff
-    style SC fill:#7B68EE,color:#fff
-    style API fill:#2ECC71,color:#fff
-    style SVC fill:#F39C12,color:#fff
-    style REPO fill:#E74C3C,color:#fff
-    style DB fill:#9B59B6,color:#fff
+    style TC fill:#2563eb,color:#fff
+    style SC fill:#16a34a,color:#fff
+    style ROUTER fill:#0284c7,color:#fff
+    style MW fill:#d97706,color:#fff
+    style SVC fill:#9333ea,color:#fff
+    style REPO fill:#dc2626,color:#fff
+    style DB fill:#475569,color:#fff
 ```
 
-### Data Flow — Quiz CRUD Example
+---
+
+## 2. Layered Component Architecture
+
+### 2.1 Web Presentation & Routing Layer (`frontend/`)
+- **Jinja2 Server-Side Templates (`frontend/templates/`):**
+  - Modular templates with base layout (`base.html`), navigation, flash notifications (`_flash.html`), and modal components.
+  - Dedicated views for Instructor Dashboard, Quiz Library, Question Editor, and Live Analytics.
+  - Dedicated student workflows for Session Entry (`/join`), Assessment Taking (`/session/{code}/take`), and Graded Results (`/session/{code}/results`).
+- **Static Assets (`frontend/static/`):**
+  - Responsive modern CSS (`style.css`) with CSS custom properties.
+  - JavaScript client runtime (`app.js`) handling Q06 Poka-Yoke confirmation dialogs, double-click submission prevention, and dynamic question option controls.
+
+### 2.2 Security & Authentication Layer (`backend/middleware/auth.py`)
+- **Hybrid Security Model:**
+  - Instructors authenticate via email and bcrypt-hashed password; identity is preserved via tamper-proof signed session cookies (`itsdangerous.URLSafeTimedSerializer`).
+  - Students enter sessions ephemerally using their Student Identifier (Roll Number) and a 6-character session code; validated against duplicate entry constraints without account friction.
+
+### 2.3 Domain Service Layer (`backend/services/`)
+- **`QuizService`:** Handles quiz business logic, whitespace sanitization, and Search-Before-Add validation.
+- **`QuestionService`:** Manages questions, options JSON serialization, and unique question prompts within a quiz.
+- **`SessionService`:** Governs session lifecycle, collision-free code generation, student join validations, answer processing, and aggregated score analytics.
+- **`GradingService`:** Deterministic auto-grading supporting MCQ exact matches, case-insensitive and whitespace-trimmed true/false and short answer evaluations.
+
+### 2.4 Data Access & Persistence Layer (`backend/repositories/` & `backend/database.py`)
+- **SQLAlchemy 2.0 ORM:** Modern declarative models (`backend/db_models.py`) with explicit foreign key cascading (`ondelete="CASCADE"`) and session boundaries.
+- **Engine Interoperability:** Automatically operates on PostgreSQL in production via `psycopg2-binary` or SQLite in local test environments with `PRAGMA foreign_keys = ON` connection listeners.
+- **Alembic:** Reversible, versioned database schema migration scripts (`alembic/versions/`).
+
+---
+
+## 3. Data Flow Diagrams
+
+### 3.1 Quiz Creation Flow (Q06 Protected)
 
 ```mermaid
 sequenceDiagram
-    participant T as Teacher Client
-    participant A as API Layer
-    participant S as Service Layer
-    participant R as Repository Layer
-    participant D as SQLite Database
+    participant T as Instructor (Web)
+    participant R as Router (/quizzes)
+    participant S as QuizService
+    participant Rep as QuizRepository
+    participant D as Database
 
-    T->>A: POST /api/quizzes {title, description}
-    A->>S: create_quiz(data)
-    S->>S: Validate required fields (Pre-add Validation)
-    S->>R: find_by_title(title)
-    R->>D: SELECT ... WHERE title = ?
-    D-->>R: Results
-    R-->>S: Existing matches (Search Before Add)
-    S->>R: insert_quiz(data)
-    R->>D: INSERT INTO quizzes ...
-    D-->>R: OK (Unique ID Constraints enforced)
-    R-->>S: Quiz record
-    S-->>A: Created quiz
-    A-->>T: 201 Created {id, title, ...}
+    T->>R: POST /quizzes {title, description}
+    R->>S: create_quiz(QuizCreate)
+    S->>S: Pre-Add Validation (Trim whitespace, check non-empty)
+    S->>Rep: find_by_title(title)
+    Rep->>D: SELECT WHERE title = :title
+    alt Title Exists (Search Before Add)
+        D-->>Rep: Found record
+        Rep-->>S: Record
+        S-->>R: HTTP 409 Conflict
+        R-->>T: Re-render with Error Banner
+    else Title Unique
+        D-->>Rep: None
+        S->>Rep: create(title, description)
+        Rep->>D: INSERT INTO quizzes
+        D-->>Rep: Success
+        Rep-->>S: Quiz entity
+        S-->>R: 201 Created / Redirect
+        R-->>T: 303 Redirect to /quizzes
+    end
 ```
 
-### Data Flow — Delete with Confirmation
+### 3.2 Student Session Entry Flow (Q06 Protected)
 
 ```mermaid
 sequenceDiagram
-    participant T as Teacher Client
-    participant UI as Confirmation Dialog
-    participant A as API Layer
-    participant R as Repository Layer
-    participant D as SQLite Database
+    participant St as Student (Web)
+    participant R as Router (/join)
+    participant S as SessionService
+    participant Rep as SessionRepository
+    participant D as Database
 
-    T->>UI: Click "Delete Quiz"
-    UI->>T: "Are you sure?" (Confirmation Dialog)
-    alt Confirmed
-        T->>A: DELETE /api/quizzes/{id}
-        A->>R: delete_quiz(id)
-        R->>D: DELETE FROM quizzes WHERE id = ?
-        D-->>R: OK (CASCADE deletes questions)
-        R-->>A: Deleted
-        A-->>T: 200 OK
-    else Cancelled
-        T->>T: No action taken
+    St->>R: POST /join {session_code, name, student_id}
+    R->>S: join_session(code, name, student_id)
+    S->>Rep: get_session_by_code(code)
+    alt Session Inactive / Missing
+        S-->>R: HTTP 400 Bad Request
+        R-->>St: Flash "Session not active"
+    else Session Active
+        S->>Rep: get_participant(session_id, student_id)
+        alt Roll Number Already Joined (Search Before Add)
+            Rep-->>S: Found participant
+            S-->>R: HTTP 409 Conflict
+            R-->>St: Flash "Roll Number already joined"
+        else New Participant
+            S->>Rep: create_participant(session_id, name, student_id)
+            Rep->>D: INSERT INTO participants (UNIQUE checked)
+            D-->>Rep: Success
+            Rep-->>S: Participant record
+            S-->>R: Redirect URL
+            R-->>St: 303 Redirect to /session/{code}/take
+        end
     end
 ```
 
 ---
 
-## 2. Component Details
+## 4. Q06 Anti-Duplicate Defense Traceability
 
-### 2.1 Desktop Clients (PySide6)
-
-**Responsibility:** Presentation layer only. Renders UI, captures user input, displays responses. Contains no business logic or database access.
-
-| Component | Purpose |
-|-----------|---------|
-| `apps/teacher/main.py` | Teacher application entry point |
-| `apps/teacher/api_client.py` | HTTP client wrapping backend API calls |
-| `apps/teacher/views/main_window.py` | Main window with navigation |
-| `apps/teacher/views/quiz_view.py` | Quiz CRUD interface |
-| `apps/teacher/views/question_view.py` | Question CRUD interface |
-| `apps/student/` | Student application (planned) |
-
-**Key design rules:**
-- All data operations go through the API client → backend.
-- Confirmation dialogs are implemented here (Q06 Feature D).
-- UI displays error messages returned by the backend.
-
-### 2.2 Backend Server (FastAPI)
-
-**Responsibility:** Application logic, validation, data access, grading. Single authority for all data operations.
-
-#### API Layer (`backend/api/`)
-
-- Defines HTTP route handlers.
-- Parses request bodies using Pydantic models.
-- Returns structured JSON responses with appropriate HTTP status codes.
-- Delegates all logic to the service layer.
-
-#### Service Layer (`backend/services/`)
-
-- Implements business logic: validation, duplicate detection, grading.
-- Enforces Q06 features: Pre-add Validation and Search Before Add.
-- Does not construct SQL queries directly.
-
-#### Repository Layer (`backend/repositories/`)
-
-- Executes SQL queries against the database.
-- Manages transactions.
-- Returns plain data to the service layer.
-
-### 2.3 Database (SQLite3)
-
-**Responsibility:** Persistent storage with integrity enforcement.
-
-- Enforces PRIMARY KEY, UNIQUE, NOT NULL, and FOREIGN KEY constraints.
-- CASCADE delete behaviour for parent-child relationships.
-- Accessed exclusively by the backend process.
-- Schema managed by `backend/database.py`.
-
----
-
-## 3. Technology Stack
-
-| Layer | Technology | Version | Purpose |
-|-------|-----------|---------|---------|
-| Desktop UI | PySide6 | ≥ 6.7 | Cross-platform Qt-based desktop interface |
-| Backend | FastAPI | ≥ 0.115 | Async REST API framework with auto-validation |
-| ASGI Server | Uvicorn | ≥ 0.30 | Serves the FastAPI application |
-| HTTP Client | httpx | ≥ 0.27 | Desktop client → backend communication |
-| Database | SQLite3 | Built-in | Zero-config persistent storage |
-| Validation | Pydantic | ≥ 2.9 | Request/response data models (bundled with FastAPI) |
-| Testing | pytest | ≥ 8.3 | Automated test framework |
-| Data Analysis | Pandas + Matplotlib + Seaborn | — | SQC charts (Reviews 3–4) |
-
----
-
-## 4. Q06 Feature Integration Points
-
-```mermaid
-flowchart LR
-    subgraph Q06["Q06: Reduce Duplicate Entries"]
-        F1["Unique ID\nConstraints"]
-        F2["Pre-add\nValidation"]
-        F3["Search\nBefore Add"]
-        F4["Confirmation\nDialogs"]
-    end
-
-    F1 -->|"PRIMARY KEY, UNIQUE"| DB["Database Layer"]
-    F2 -->|"Pydantic models +\nservice checks"| SVC["Service Layer"]
-    F3 -->|"find_existing() queries"| REPO["Repository Layer"]
-    F4 -->|"QMessageBox prompts"| UI["Teacher Client UI"]
-```
-
----
-
-## 5. Deployment Architecture (Planned)
-
-For internet-based deployment, the architecture transitions as follows:
-
-| Aspect | Local Development | Internet Deployment |
-|--------|------------------|-------------------|
-| Backend host | `localhost:8000` | Cloud server with public IP |
-| Database | SQLite file | PostgreSQL (if concurrency demands) |
-| Protocol | HTTP | HTTPS with TLS |
-| Client config | Hardcoded localhost | Configurable server URL |
-| Real-time updates | Polling or deferred | WebSocket connection |
-
-The client-server separation ensures this transition requires only configuration changes, not architectural changes.
+| Tier | Quality Defense Layer | Architectural Implementation |
+|------|-----------------------|------------------------------|
+| **Tier 1 (Storage)** | Relational Integrity | Unique constraints `ix_quizzes_title`, `ix_users_email`, `ix_sessions_session_code`, `uq_quiz_question_text`, `uq_session_participant`, `uq_participant_question`. |
+| **Tier 2 (Pre-Add)** | Input Sanitization | Pydantic model validators + HTML5 input attributes strip whitespace and enforce bounds. |
+| **Tier 3 (Service)** | Search-Before-Add | Explicit pre-insert query checks in `AuthService`, `QuizService`, and `SessionService` returning HTTP 409 early. |
+| **Tier 4 (Poka-Yoke)** | User Interface Guard | Client-side modal dialogs (`_confirm_modal.html`) and rapid double-submit button disabling. |

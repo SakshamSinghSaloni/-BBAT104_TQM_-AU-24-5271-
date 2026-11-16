@@ -54,7 +54,7 @@ class QuizRepository:
         return [self._to_dict(q) for q in quizzes]
 
     def find_by_title(self, title: str) -> List[Dict[str, Any]]:
-        """Used for Q06 Feature 3: Search Before Add (case-insensitive)."""
+        """Find quiz by title to prevent duplicate titles (case-insensitive)."""
         clean = title.strip()
         stmt = select(Quiz).where(func.lower(Quiz.title) == func.lower(clean))
         quizzes = self.db.scalars(stmt).all()

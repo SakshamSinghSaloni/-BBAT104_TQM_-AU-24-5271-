@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Online Quiz System{% endblock %}</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <!-- Header / Navigation -->
+  <header>
+    <nav class="navbar">
+      <a href="/" class="nav-brand">
+        <span>📝 QuizSystem</span>
+      </a>
+
+      <ul class="nav-links">
+        {% if current_user %}
+          <li><a href="/dashboard">Dashboard</a></li>
+          <li><a href="/quizzes">Quizzes</a></li>
+          <li>
+            <span class="user-badge">👤 {{ current_user.name }}</span>
+          </li>
+          <li>
+            <form action="/auth/logout" method="post" style="display:inline;">
+              <button type="submit" class="btn btn-secondary btn-sm">Logout</button>
+            </form>
+          </li>
+        {% else %}
+          <li><a href="/join" class="btn btn-primary btn-sm">Join Quiz</a></li>
+          <li><a href="/auth/login">Teacher Login</a></li>
+          <li><a href="/auth/register">Register</a></li>
+        {% endif %}
+      </ul>
+    </nav>
+  </header>
+
+  <!-- Main View Container -->
+  <main class="main-content">
+    {% include "partials/_flash.html" %}
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Confirmation Modal -->
+  {% include "partials/_confirm_modal.html" %}
+
+  <!-- Application Footer -->
+  <footer class="footer">
+    <p>&copy; 2026 Online Quiz Assessment Platform. All rights reserved.</p>
+  </footer>
+
+  <script src="/static/js/app.js"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>
