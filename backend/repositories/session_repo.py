@@ -113,6 +113,27 @@ class SessionRepository:
         self.db.refresh(submission)
         return submission
 
+    def create_submissions_batch(
+        self,
+        submission_data: list[dict[str, Any]],
+    ) -> list[Submission]:
+        """Atomically persist a batch of submissions in a single commit."""
+        now = datetime.now(timezone.utc).isoformat()
+        records = [
+            Submission(
+                participant_id=item["participant_id"],
+                question_id=item["question_id"],
+                answer_text=item["answer_text"].strip(),
+                is_correct=item["is_correct"],
+                points_awarded=item["points_awarded"],
+                submitted_at=now,
+            )
+            for item in submission_data
+        ]
+        self.db.add_all(records)
+        self.db.commit()
+        return records
+
     def get_submission(self, participant_id: int, question_id: int) -> Submission | None:
         stmt = select(Submission).where(
             Submission.participant_id == participant_id,

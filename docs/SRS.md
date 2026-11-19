@@ -148,7 +148,7 @@ flowchart TD
 | **NFR-05** | **Concurrency & Scalability** | System architecture supports concurrent student submissions during live exam sessions without table/file locking or deadlocks. | `VoS-15` (SH-06) | Must |
 | **NFR-06** | **Schema Versioning** | Database DDL is versioned and automated via migration scripts (Alembic). Zero manual un-tracked schema alterations. | `VoS-16` (SH-06) | Must |
 | **NFR-07** | **Observability** | `GET /` serves as a health probe returning HTTP 200 with service metadata and documentation links in $< 50\text{ms}$. | `VoS-17` (SH-06) | Must |
-| **NFR-08** | **Testability & Velocity** | Comprehensive automated test suite executes in $< 2.0\text{s}$ with $100\%$ pass rate on all Q06 verification paths. | `VoS-10` (SH-03) | Must |
+| **NFR-08** | **Testability & Velocity** | Comprehensive automated test suite executes across unit, integration, and UI layers with $100\%$ pass rate (54 automated tests + 12 manual scenarios). | `VoS-10` (SH-03) | Must |
 
 ---
 
@@ -191,12 +191,12 @@ This matrix establishes the complete TQM audit trail connecting each **Stakehold
 | **VoS-06** | SH-02 (Student) | `FR-10`, `FR-11`, `FR-Q1` | `backend/database.py` (SQLAlchemy models) | `test_q06_unique_participant_per_session_constraint` | ✅ Verified |
 | **VoS-07** | SH-02 (Student) | `FR-13` | `backend/services/grading_service.py` | `test_grading.py` (all tests) | ✅ Verified |
 | **VoS-08** | SH-03 (Professor) | System Pipeline | `docs/` (`stakeholders.md` $\rightarrow$ `SRS.md`) | Stage-by-stage document audit | ✅ Verified |
-| **VoS-09** | SH-03 (Professor) | Defect Logging | `docs/testing.md`, `docs/defect-log.md` | JUnit XML report + Defect Register | 🔲 Stage 7 |
-| **VoS-10** | SH-03 (Professor) | Q06 Coverage | `tests/` (29 automated test cases) | `pytest tests/ -v` (100% pass rate in $<1.3\text{s}$) | ✅ Verified |
+| **VoS-09** | SH-03 (Professor) | Defect Logging | `docs/testing.md`, `docs/defect-log.md` | JUnit XML report (`test-results/automated-results.xml`) + Defect Register | ✅ Verified |
+| **VoS-10** | SH-03 (Professor) | Q06 Coverage | `tests/` (54 automated test cases across 5 test modules) | `pytest tests/ -v` (100% pass rate, 54 passed in ~15s) | ✅ Verified |
 | **VoS-11** | SH-04 (University) | `NFR-01` | `backend/database.py` | `test_foreign_key_cascade_deletion` | ✅ Verified |
 | **VoS-12** | SH-04 (University) | `NFR-02` | `backend/models.py`, `backend/repositories/` | `test_tables_created_successfully` (schema inspection) | ✅ Verified |
 | **VoS-13** | SH-05 (Developer) | `NFR-04` | `backend/` (API $\rightarrow$ Service $\rightarrow$ Repo) | Codebase inspection (zero cross-tier leakage) | ✅ Verified |
 | **VoS-14** | SH-05 (Developer) | `FR-Q2` | `backend/models.py` (Pydantic schemas) | `test_api_q06_pre_add_validation_rejects_empty_title` | ✅ Verified |
-| **VoS-15** | SH-06 (SysAdmin) | `NFR-05` | `backend/database.py`, `backend/db_models.py` | SQLAlchemy connection pooling + PostgreSQL setup | 🔲 Stage 4 |
-| **VoS-16** | SH-06 (SysAdmin) | `NFR-06` | `alembic/` | `alembic upgrade head` automated execution | 🔲 Stage 4 |
+| **VoS-15** | SH-06 (SysAdmin) | `NFR-05` | `backend/database.py`, `backend/db_models.py` | SQLAlchemy connection pooling + PostgreSQL setup (ADR-002) | ✅ Verified |
+| **VoS-16** | SH-06 (SysAdmin) | `NFR-06` | `alembic/` | `alembic upgrade head` automated execution | ✅ Verified |
 | **VoS-17** | SH-06 (SysAdmin) | `NFR-07` | `backend/main.py` | `GET /` endpoint health check verification | ✅ Verified |

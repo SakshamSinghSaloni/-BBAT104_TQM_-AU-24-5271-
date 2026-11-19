@@ -180,6 +180,7 @@ class SessionService:
 
         # Map submitted answers by question_id
         submitted_map = {a.question_id: a.answer_text for a in answers}
+        to_persist: list[dict[str, Any]] = []
 
         for q_id, question in questions.items():
             user_ans = submitted_map.get(q_id, "")
@@ -189,14 +190,13 @@ class SessionService:
             points_awarded = question["points"] if is_correct else 0
             total_score += points_awarded
 
-            # Persist submission record
-            self.session_repo.create_submission(
-                participant_id=participant_id,
-                question_id=q_id,
-                answer_text=user_ans,
-                is_correct=1 if is_correct else 0,
-                points_awarded=points_awarded,
-            )
+            to_persist.append({
+                "participant_id": participant_id,
+                "question_id": q_id,
+                "answer_text": user_ans,
+                "is_correct": 1 if is_correct else 0,
+                "points_awarded": points_awarded,
+            })
 
             details.append(
                 SubmissionDetailResponse(
@@ -209,6 +209,10 @@ class SessionService:
                     max_points=question["points"],
                 )
             )
+
+        # Atomically persist all submissions in a single batch commit
+        if to_persist:
+            self.session_repo.create_submissions_batch(to_persist)
 
         pct = round((total_score / max_possible_score * 100), 1) if max_possible_score > 0 else 0.0
 

@@ -10,7 +10,7 @@ from fastapi import Depends, HTTPException, Request, Response, status
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 from sqlalchemy.orm import Session
 
-from backend.config import SECRET_KEY, SESSION_COOKIE_NAME, ACCESS_TOKEN_EXPIRE_MINUTES
+from backend.config import COOKIE_SECURE, SECRET_KEY, SESSION_COOKIE_NAME, ACCESS_TOKEN_EXPIRE_MINUTES
 from backend.database import get_db
 from backend.db_models import User
 from backend.repositories.user_repo import UserRepository
@@ -42,7 +42,7 @@ def set_session_cookie(response: Response, user_id: int) -> None:
         max_age=_COOKIE_MAX_AGE,
         httponly=True,
         samesite="lax",
-        secure=False,  # Allow HTTP in local dev/testing
+        secure=COOKIE_SECURE,  # Configurable via COOKIE_SECURE env; default False for local dev
     )
 
 

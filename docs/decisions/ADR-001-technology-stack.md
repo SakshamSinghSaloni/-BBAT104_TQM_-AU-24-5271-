@@ -1,7 +1,10 @@
 # ADR-001: Technology Stack Selection
 
-**Date:** 2026-10-11
-**Status:** Accepted
+**Date:** 2026-10-11  
+**Status:** Superseded by [ADR-002](ADR-002-database-upgrade.md) (Database Layer Upgrade) and [ADR-003](ADR-003-unified-web-architecture.md) (Unified Web Application Architecture)  
+
+> [!NOTE]
+> **Evolutionary Context:** This ADR documents the initial Phase 1 baseline stack decision (Desktop PySide6 + Direct SQLite). During Stage 4 and Stage 5, the project evolved into an enterprise-grade three-tier web application using FastAPI + Jinja2 SSR ([ADR-003](ADR-003-unified-web-architecture.md)) and SQLAlchemy 2.0 ORM with Alembic schema migrations ([ADR-002](ADR-002-database-upgrade.md)), eliminating desktop client distribution friction and manual database schema alterations.
 
 ## Context
 

@@ -184,29 +184,54 @@ pytest tests/ -v
 │   ├── architecture.md              # System Architecture Specification (v2.0)
 │   ├── database-design.md           # Entity-Relationship & Schema Spec (v2.0)
 │   ├── api-design.md                # REST API Specification (v2.0)
+│   ├── manual-test-plan.md          # 12 Structured Manual Test Cases (Stage 6)
+│   ├── testing.md                   # Final Verification & QA Report (Stage 7)
+│   ├── defect-log.md                # Empirical Defect Register (IEEE 829 / ISO 9001)
 │   ├── scope.md                     # Review Phase Scope Boundaries
 │   └── decisions/                   # Architecture Decision Records (ADRs)
 │       ├── ADR-001-technology-stack.md
 │       ├── ADR-002-database-upgrade.md
 │       ├── ADR-003-web-pivot.md
 │       └── ADR-004-hybrid-auth.md
+├── tqm/                             # Stage 8 TQM Quality Artefacts
+│   ├── README.md                    # Executive index & chart regeneration guide
+│   ├── fmea.md                      # AIAG/VDA FMEA Matrix (98.97% RPN reduction)
+│   ├── sipoc.md                     # ISO 9001 SIPOC Process Flowcharts
+│   ├── pareto.md                    # Juran Pareto Analysis (Vital Few 62.5%)
+│   ├── pareto_chart.png             # 300 DPI Publication-Grade Pareto Chart
+│   ├── fishbone.md                  # 6M Ishikawa Cause-and-Effect Analysis
+│   ├── ishikawa_fishbone.png        # 300 DPI Publication-Grade Fishbone Diagram
+│   ├── pdca.md                      # Deming PDCA Continuous Improvement Cycle
+│   ├── generate_pareto.py           # SQC Pareto Chart Generator Script
+│   └── generate_fishbone.py         # SQC Fishbone Generator Script
 ├── requirements.txt                 # Python project dependencies
-└── tests/                           # Automated test suites
-    ├── test_api.py                  # REST API contract & Q06 tests
-    ├── test_database.py             # Schema & cascading integrity tests
-    ├── test_grading.py              # Evaluation & grading logic tests
-    └── test_services.py             # Service layer validation & duplicate tests
+├── test-results/
+│   └── automated-results.xml        # JUnit XML Test Execution Artifact
+└── tests/                           # Automated test suites (54 tests, 100% passing)
+    ├── conftest.py                  # Shared isolated SQLite test client fixtures
+    ├── test_api.py                  # REST API contract & CRUD endpoints (14 tests)
+    ├── test_auth.py                 # Registration, login & cookie auth (8 tests)
+    ├── test_database.py             # Schema & cascading integrity (4 tests)
+    ├── test_grading.py              # Evaluation & grading logic (4 tests)
+    ├── test_pages.py                # Web SSR page workflows & student flow (7 tests)
+    ├── test_services.py             # Pre-add validation & search-before-add (7 tests)
+    └── test_sessions.py             # Live session lifecycle & auto-grading (10 tests)
 ```
 
 ---
 
 ## 7. Quality Assurance & Testing Summary
 
-All 29 tests execute successfully in under 3 seconds:
-- **`tests/test_database.py` (4 tests):** Validates table creation, foreign key cascading deletion, unique session code constraints, and composite unique participant constraints (`uq_session_participant`).
+All **54 automated unit and integration tests** execute successfully with a **100% pass rate** in ~15 seconds:
+- **`tests/test_auth.py` (8 tests):** Validates teacher registration, duplicate email rejection (409), password hashing, login, authentication cookies, and logout.
+- **`tests/test_sessions.py` (10 tests):** Validates session code generation, participant enrollment, duplicate join rejection, student answer isolation, submission auto-grading, duplicate submission blocking, and analytics.
+- **`tests/test_pages.py` (7 tests):** Validates server-rendered HTML pages, unauthenticated redirect protection, teacher dashboard, web form quiz creation with duplicate detection, question authoring across MCQ/True-False/Short-Answer, and end-to-end student assessment flow.
+- **`tests/test_api.py` (14 tests):** Validates REST API endpoints for quizzes and questions, duplicate rejection responses (`409 Conflict`), and update constraints.
 - **`tests/test_services.py` (7 tests):** Validates whitespace stripping, pre-add validation, MCQ structural consistency, and Search-Before-Add duplicate detection.
+- **`tests/test_database.py` (4 tests):** Validates table creation, foreign key cascading deletion, unique session code constraints, and composite unique participant constraints (`uq_session_participant`).
 - **`tests/test_grading.py` (4 tests):** Validates case-insensitive short answer evaluation, whitespace trimming, and true/false verification.
-- **`tests/test_api.py` (14 tests):** Validates end-to-end HTTP endpoints for quizzes and questions, duplicate rejection responses (`409 Conflict`), and update constraints.
+
+In addition, **12 structured manual test cases (`TC-MAN-01` to `TC-MAN-12`)** in `docs/manual-test-plan.md` have been verified passing in live browser sessions, yielding **66 total verified checks**.
 
 ---
 

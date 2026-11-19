@@ -79,11 +79,11 @@ flowchart LR
 
 | Element | Component | Detailed Specifications & Criteria |
 | :--- | :--- | :--- |
-| **Suppliers (S)** | • Course Instructor<br>• Academic Curriculum Committee<br>• System Administrator | Qualified faculty authoring assessment materials conforming to course learning objectives and syllabus criteria. |
+| **Suppliers (S)** | • Course Instructor (`SH-01`)<br>• Academic Curriculum Committee (`SH-03`)<br>• System Administrator (`SH-06`) | Qualified faculty authoring assessment materials conforming to course learning objectives and syllabus criteria. |
 | **Inputs (I)** | • Teacher Credentials (`email`, `password`)<br>• Quiz Metadata (`title`, `description`)<br>• Question Items (MCQ, True/False, Short Answer)<br>• Point Weights & Correct Answer Keys | Valid UTF-8 strings, normalized whitespace, distinct multiple-choice option arrays ($2 \le n \le 6$). |
 | **Process (P)** | **Step 1:** Instructor Authentication (`POST /auth/login`)<br>**Step 2:** Pre-Add Validation & Whitespace Stripping (Tier 2)<br>**Step 3:** Search-Before-Add Duplicate Check (Tier 3)<br>**Step 4:** Atomic Database Persistence (Tier 1 ORM)<br>**Step 5:** Session Generation (`POST /quizzes/{id}/sessions`) | Sequential pipeline guarded by database transactions and Pydantic validation schemas. |
 | **Outputs (O)** | • Authenticated Session Cookie (`session_user_id`)<br>• Clean Quiz Entity (`id`, `title`, `question_count`)<br>• Live Session Record (`session_code`, `status='active'`)<br>• Deletion Confirmation Modals (Poka-Yoke Tier 4) | Tamper-proof signed session token, collision-free 6-character uppercase session code. |
-| **Customers (C)**| • Enrolled Course Students (`SH-01`)<br>• Lead Faculty / Examiners (`SH-02`)<br>• Department Head (`SH-03`) | End users consuming the created assessment for formal evaluation. |
+| **Customers (C)**| • Enrolled Course Students (`SH-02`)<br>• Course Instructors (`SH-01`)<br>• Academic Dept / Evaluators (`SH-03 / SH-04`) | End users consuming the created assessment for formal evaluation. |
 
 ### 3.3 Detailed Process Flow Diagram
 
@@ -119,11 +119,11 @@ flowchart TD
 
 | Element | Component | Detailed Specifications & Criteria |
 | :--- | :--- | :--- |
-| **Suppliers (S)** | • Enrolled Students (`SH-01`)<br>• Active Session Engine (`SH-02`)<br>• University Enrollment Database | Authenticated or registered course candidates presenting official Student ID credentials. |
+| **Suppliers (S)** | • Enrolled Students (`SH-02`)<br>• Active Session Engine (`SH-01`)<br>• University Enrollment Database (`SH-04`) | Authenticated or registered course candidates presenting official Student ID credentials. |
 | **Inputs (I)** | • 6-Character Session Code (e.g., `TQM101`)<br>• Student Full Name (`student_name`)<br>• University Roll Number (`student_identifier`)<br>• Answer Submissions (`q_{id}` form fields) | Case-insensitive normalized code, uppercase-normalized roll number string, form payloads. |
 | **Process (P)** | **Step 1:** Session Availability Check (`status == 'active'`)<br>**Step 2:** Participant Anti-Duplicate Join Guard (Tier 1 & 3)<br>**Step 3:** Answer-Omitted Assessment Delivery (`GET /take`)<br>**Step 4:** Double-Submit Interception (Poka-Yoke Tier 4)<br>**Step 5:** Automated Multi-Type Evaluation (Grading Engine)<br>**Step 6:** Scorecard Compilation & Analytics Aggregation | Fast transaction pipeline ($< 100\text{ ms}$ evaluation response time). |
 | **Outputs (O)** | • Participant Record (`id`, `session_id`, `joined_at`)<br>• Immutable Submissions Table (`points_awarded`)<br>• Instant Student Scorecard (`total_score`, `% score`)<br>• Teacher Analytics Summary (Accuracy rate per question) | Detailed breakdown showing points awarded per question, correct answers, and leaderboard rank. |
-| **Customers (C)**| • Individual Participating Student (`SH-01`)<br>• Course Instructor (`SH-02`)<br>• Accreditation Reviewers (`SH-06`) | Consumers of accurate, tamper-proof academic assessment metrics. |
+| **Customers (C)**| • Individual Participating Student (`SH-02`)<br>• Course Instructor (`SH-01`)<br>• Academic Dept / Evaluators (`SH-03 / SH-04`) | Consumers of accurate, tamper-proof academic assessment metrics. |
 
 ### 4.3 Detailed Assessment Flow Diagram
 

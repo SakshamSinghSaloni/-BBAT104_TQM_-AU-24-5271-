@@ -25,6 +25,6 @@ DATABASE_URL: str = os.getenv("DATABASE_URL", DEFAULT_DB_URL)
 
 # Authentication & Security
 SECRET_KEY: str = os.getenv("SECRET_KEY", "tqm-quiz-system-super-secret-key-change-in-production")
-ALGORITHM: str = "HS256"
 SESSION_COOKIE_NAME: str = "quiz_session"
 ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
+COOKIE_SECURE: bool = os.getenv("COOKIE_SECURE", "false").lower() in ("true", "1", "yes")

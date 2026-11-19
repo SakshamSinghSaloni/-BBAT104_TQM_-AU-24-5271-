@@ -3,7 +3,7 @@
 **Project:** Online Quiz System — Q06: Reduce Duplicate Entries  
 **Version:** 2.0 | **Date:** 2026-11-16  
 **Base URL:** `http://localhost:8000`  
-**Authentication:** Signed HTTP-Only Session Cookie or `Authorization: Bearer <token>`  
+**Authentication:** Signed HTTP-Only Session Cookie (`quiz_session`) via itsdangerous / FastAPI dependency  
 
 ---
 
@@ -109,7 +109,7 @@
 
 ### POST /api/sessions/{session_code}/join — Join Session
 - **Purpose:** Ephemeral student registration.
-- **Payload:** `{"student_name": "Saksham Saloni", "student_identifier": "AU-24-5271"}`
+- **Payload:** `{"student_name": "Alex Morgan", "student_identifier": "STU-1001"}`
 - **Q06 Defense:** Pre-add validation on non-empty values; Search-Before-Add rejects duplicate joins by the same Roll Number in this session (`409 Conflict`).
 - **Response:** `201 Created` with `ParticipantResponse`.
 
