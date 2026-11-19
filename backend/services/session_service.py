@@ -135,23 +135,17 @@ class SessionService:
         Omits 'correct_answer' to preserve assessment integrity.
         """
         session = self.get_session_by_code(session_code)
-        questions = self.question_repo.list_by_quiz_id(session.quiz_id)
+        questions = self.question_repo.list_by_quiz(session.quiz_id)
 
         clean_questions = []
         for q in questions:
-            options = None
-            if q.options_json:
-                try:
-                    options = json.loads(q.options_json)
-                except Exception:
-                    options = []
             clean_questions.append({
-                "id": q.id,
-                "question_text": q.question_text,
-                "question_type": q.question_type,
-                "options": options,
-                "points": q.points,
-                "order_index": q.order_index,
+                "id": q["id"],
+                "question_text": q["question_text"],
+                "question_type": q["question_type"],
+                "options": q.get("options"),
+                "points": q["points"],
+                "order_index": q["order_index"],
             })
         return clean_questions
 
@@ -178,10 +172,10 @@ class SessionService:
                 detail=f"Participant '{participant.student_identifier}' has already submitted this quiz.",
             )
 
-        questions = {q.id: q for q in self.question_repo.list_by_quiz_id(session.quiz_id)}
+        questions = {q["id"]: q for q in self.question_repo.list_by_quiz(session.quiz_id)}
 
         total_score = 0
-        max_possible_score = sum(q.points for q in questions.values())
+        max_possible_score = sum(q["points"] for q in questions.values())
         details: List[SubmissionDetailResponse] = []
 
         # Map submitted answers by question_id
@@ -190,9 +184,9 @@ class SessionService:
         for q_id, question in questions.items():
             user_ans = submitted_map.get(q_id, "")
             is_correct, _, _ = GradingService.evaluate_answer(
-                question.question_type, user_ans, question.correct_answer
+                question["question_type"], user_ans, question["correct_answer"]
             )
-            points_awarded = question.points if is_correct else 0
+            points_awarded = question["points"] if is_correct else 0
             total_score += points_awarded
 
             # Persist submission record
@@ -207,12 +201,12 @@ class SessionService:
             details.append(
                 SubmissionDetailResponse(
                     question_id=q_id,
-                    question_text=question.question_text,
+                    question_text=question["question_text"],
                     submitted_answer=user_ans,
-                    correct_answer=question.correct_answer,
+                    correct_answer=question["correct_answer"],
                     is_correct=is_correct,
                     points_awarded=points_awarded,
-                    max_points=question.points,
+                    max_points=question["points"],
                 )
             )
 
@@ -236,13 +230,13 @@ class SessionService:
         session = self.get_session(session_id)
         quiz = self.quiz_repo.get_by_id(session.quiz_id)
         participants = self.session_repo.list_participants_by_session(session_id)
-        questions = self.question_repo.list_by_quiz_id(session.quiz_id)
+        questions = self.question_repo.list_by_quiz(session.quiz_id)
         all_submissions = self.session_repo.list_submissions_by_session(session_id)
 
         # Build map of (participant_id, question_id) -> submission
         sub_map = {(s.participant_id, s.question_id): s for s in all_submissions}
 
-        max_score = sum(q.points for q in questions)
+        max_score = sum(q["points"] for q in questions)
         participant_results = []
         scores = []
 
@@ -270,15 +264,15 @@ class SessionService:
         # Question analytics
         question_stats = []
         for q in questions:
-            q_subs = [s for s in all_submissions if s.question_id == q.id]
+            q_subs = [s for s in all_submissions if s.question_id == q["id"]]
             total_answers = len(q_subs)
             correct_answers = sum(1 for s in q_subs if s.is_correct == 1)
             acc_rate = round((correct_answers / total_answers * 100), 1) if total_answers > 0 else 0.0
             question_stats.append({
-                "question_id": q.id,
-                "question_text": q.question_text,
-                "question_type": q.question_type,
-                "points": q.points,
+                "question_id": q["id"],
+                "question_text": q["question_text"],
+                "question_type": q["question_type"],
+                "points": q["points"],
                 "total_responses": total_answers,
                 "correct_responses": correct_answers,
                 "accuracy_rate": acc_rate,
@@ -292,8 +286,8 @@ class SessionService:
             "status": session.status,
             "started_at": session.started_at,
             "ended_at": session.ended_at,
-            "quiz_id": quiz.id if quiz else session.quiz_id,
-            "quiz_title": quiz.title if quiz else "Unknown Quiz",
+            "quiz_id": quiz["id"] if quiz else session.quiz_id,
+            "quiz_title": quiz["title"] if quiz else "Unknown Quiz",
             "total_participants": len(participants),
             "total_submissions": len([p for p in participant_results if p["has_submitted"]]),
             "max_score": max_score,

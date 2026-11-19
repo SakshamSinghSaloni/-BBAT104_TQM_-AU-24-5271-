@@ -81,6 +81,9 @@ class QuestionRepository:
         questions = self.db.scalars(stmt).all()
         return [self._to_dict(q) for q in questions]
 
+    # Alias for convenience
+    list_by_quiz_id = list_by_quiz
+
     def find_duplicate_in_quiz(self, quiz_id: int, question_text: str) -> List[Dict[str, Any]]:
         """Find question by text in a quiz to prevent duplicate prompts."""
         clean_text = question_text.strip()

@@ -26,6 +26,7 @@ class QuizRepository:
             "created_at": quiz.created_at,
             "updated_at": quiz.updated_at,
             "question_count": q_count,
+            "questions": [q.id for q in quiz.questions] if quiz.questions else [],
         }
 
     def create(self, title: str, description: Optional[str] = None) -> Dict[str, Any]:

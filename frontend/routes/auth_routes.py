@@ -8,6 +8,7 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, Form, HTTPException, Request, Response, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
+from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
 from backend.database import get_db
@@ -86,8 +87,11 @@ def post_register(
     try:
         user_create = UserCreate(name=name, email=email, password=password)
         user = auth_service.register_user(user_create)
-    except (HTTPException, ValueError) as e:
-        err_msg = e.detail if isinstance(e, HTTPException) else str(e)
+    except (HTTPException, ValueError, ValidationError) as e:
+        if isinstance(e, ValidationError):
+            err_msg = "; ".join(err.get("msg", str(err)) for err in e.errors())
+        else:
+            err_msg = e.detail if isinstance(e, HTTPException) else str(e)
         return templates.TemplateResponse(
             request=request,
             name="auth/register.html",

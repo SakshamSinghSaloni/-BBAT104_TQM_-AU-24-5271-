@@ -9,6 +9,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Form, HTTPException, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
+from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
 from backend.database import get_db
@@ -121,10 +122,13 @@ def create_quiz_form(
     quiz_service = QuizService(db)
     try:
         quiz_in = QuizCreate(title=title, description=description)
-        quiz_service.create_quiz(quiz_in)
+        quiz_service.create_quiz(title=quiz_in.title, description=quiz_in.description)
         return RedirectResponse(url="/quizzes", status_code=status.HTTP_303_SEE_OTHER)
-    except (HTTPException, ValueError) as e:
-        err_msg = e.detail if isinstance(e, HTTPException) else str(e)
+    except (HTTPException, ValueError, ValidationError) as e:
+        if isinstance(e, ValidationError):
+            err_msg = "; ".join(err.get("msg", str(err)) for err in e.errors())
+        else:
+            err_msg = e.detail if isinstance(e, HTTPException) else str(e)
         quizzes = quiz_service.list_quizzes()
         return templates.TemplateResponse(
             request=request,
@@ -173,7 +177,7 @@ def questions_page(
 
     quiz = quiz_service.get_quiz(quiz_id)
     questions = question_service.list_questions(quiz_id)
-    total_points = sum(q.points for q in questions)
+    total_points = sum(q["points"] for q in questions)
 
     return templates.TemplateResponse(
         request=request,
@@ -240,15 +244,25 @@ def add_question_form(
             correct_answer=correct_answer,
             points=points,
         )
-        question_service.add_question(quiz_id, q_create)
+        question_service.add_question(
+            quiz_id=quiz_id,
+            question_text=q_create.question_text,
+            question_type=q_create.question_type,
+            options=q_create.options,
+            correct_answer=q_create.correct_answer,
+            points=q_create.points,
+        )
         return RedirectResponse(
             url=f"/quizzes/{quiz_id}/questions",
             status_code=status.HTTP_303_SEE_OTHER,
         )
-    except (HTTPException, ValueError) as e:
-        err_msg = e.detail if isinstance(e, HTTPException) else str(e)
+    except (HTTPException, ValueError, ValidationError) as e:
+        if isinstance(e, ValidationError):
+            err_msg = "; ".join(err.get("msg", str(err)) for err in e.errors())
+        else:
+            err_msg = e.detail if isinstance(e, HTTPException) else str(e)
         questions = question_service.list_questions(quiz_id)
-        total_points = sum(q.points for q in questions)
+        total_points = sum(q["points"] for q in questions)
         return templates.TemplateResponse(
             request=request,
             name="quizzes/questions.html",

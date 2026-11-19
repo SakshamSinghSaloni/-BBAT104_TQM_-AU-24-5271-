@@ -19,17 +19,27 @@ class QuestionService:
     def add_question(
         self,
         quiz_id: int,
-        question_text: str,
-        question_type: str,
-        options: Optional[List[str]],
-        correct_answer: str,
+        question_text: str | Any,
+        question_type: Optional[str] = None,
+        options: Optional[List[str]] = None,
+        correct_answer: Optional[str] = None,
         points: int = 1,
         order_index: int = 0,
     ) -> Dict[str, Any]:
         """
         Add a question to a quiz.
         Validates parent quiz existence and performs duplicate prevention.
+        Supports passing individual fields or a QuestionCreate model instance.
         """
+        if not isinstance(question_text, str) and hasattr(question_text, "question_text"):
+            q_model = question_text
+            question_text = q_model.question_text
+            question_type = q_model.question_type
+            options = q_model.options
+            correct_answer = q_model.correct_answer
+            points = getattr(q_model, "points", 1)
+            order_index = getattr(q_model, "order_index", 0)
+
         # 1. Verify parent quiz exists
         quiz = self.quiz_repo.get_by_id(quiz_id)
         if not quiz:

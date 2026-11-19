@@ -14,11 +14,16 @@ class QuizService:
     def __init__(self, db: Session | Any):
         self.repo = QuizRepository(db)
 
-    def create_quiz(self, title: str, description: Optional[str] = None) -> Dict[str, Any]:
+    def create_quiz(self, title: str | Any, description: Optional[str] = None) -> Dict[str, Any]:
         """
         Create a new quiz record.
         Includes verification check to audit duplicate titles.
+        Supports passing title string or a model instance.
         """
+        if not isinstance(title, str) and hasattr(title, "title"):
+            description = getattr(title, "description", description)
+            title = title.title
+
         # Duplicate Prevention check
         existing = self.repo.find_by_title(title)
         if existing:

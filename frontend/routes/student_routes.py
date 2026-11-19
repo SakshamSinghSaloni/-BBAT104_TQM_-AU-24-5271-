@@ -133,13 +133,13 @@ async def post_submit_quiz(
 
     participant_id = int(participant_id_str)
     session = session_service.get_session_by_code(clean_code)
-    questions = session_service.question_repo.list_by_quiz_id(session.quiz_id)
+    questions = session_service.question_repo.list_by_quiz(session.quiz_id)
 
     answers: list[AnswerSubmission] = []
     for q in questions:
-        ans_key = f"q_{q.id}"
+        ans_key = f"q_{q['id']}"
         ans_val = str(form_data.get(ans_key, "")).strip()
-        answers.append(AnswerSubmission(question_id=q.id, answer_text=ans_val))
+        answers.append(AnswerSubmission(question_id=q["id"], answer_text=ans_val))
 
     try:
         session_service.submit_answers(
@@ -180,11 +180,11 @@ def get_student_results(
         return RedirectResponse(url="/join", status_code=status.HTTP_303_SEE_OTHER)
 
     submissions = session_service.session_repo.list_submissions_by_participant(participant_id)
-    questions = session_service.question_repo.list_by_quiz_id(session.quiz_id)
-    q_map = {q.id: q for q in questions}
+    questions = session_service.question_repo.list_by_quiz(session.quiz_id)
+    q_map = {q["id"]: q for q in questions}
 
     total_score = 0
-    max_score = sum(q.points for q in questions)
+    max_score = sum(q["points"] for q in questions)
     details: list[SubmissionDetailResponse] = []
 
     for s in submissions:
@@ -194,13 +194,13 @@ def get_student_results(
             total_score += s.points_awarded
             details.append(
                 SubmissionDetailResponse(
-                    question_id=q.id,
-                    question_text=q.question_text,
+                    question_id=q["id"],
+                    question_text=q["question_text"],
                     submitted_answer=s.answer_text,
-                    correct_answer=q.correct_answer,
+                    correct_answer=q["correct_answer"],
                     is_correct=is_correct,
                     points_awarded=s.points_awarded,
-                    max_points=q.points,
+                    max_points=q["points"],
                 )
             )
 

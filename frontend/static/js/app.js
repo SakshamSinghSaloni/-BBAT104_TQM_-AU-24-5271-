@@ -105,14 +105,44 @@ function initQuestionTypeSwitcher() {
   const mcqSection = document.getElementById('mcq_options_section');
   const tfSection = document.getElementById('tf_options_section');
   const textAnswerSection = document.getElementById('text_answer_section');
+  const shortAnswerInput = document.getElementById('short_answer_input');
 
   if (!typeSelect) return;
 
   function updateVisibility() {
     const selected = typeSelect.value;
-    if (mcqSection) mcqSection.style.display = selected === 'mcq' ? 'block' : 'none';
-    if (tfSection) tfSection.style.display = selected === 'true_false' ? 'block' : 'none';
-    if (textAnswerSection) textAnswerSection.style.display = selected === 'short_answer' ? 'block' : 'none';
+    const isMcq = (selected === 'mcq');
+    const isTf = (selected === 'true_false');
+    const isShort = (selected === 'short_answer');
+
+    // 1. MCQ Section
+    if (mcqSection) {
+      mcqSection.style.display = isMcq ? 'block' : 'none';
+      const opt1 = document.getElementById('mcq_option_1');
+      const opt2 = document.getElementById('mcq_option_2');
+      if (opt1) opt1.required = isMcq;
+      if (opt2) opt2.required = isMcq;
+      mcqSection.querySelectorAll('input').forEach((input) => {
+        input.disabled = !isMcq;
+      });
+    }
+
+    // 2. True / False Section
+    if (tfSection) {
+      tfSection.style.display = isTf ? 'block' : 'none';
+      tfSection.querySelectorAll('input').forEach((input) => {
+        input.disabled = !isTf;
+      });
+    }
+
+    // 3. Short Answer Section
+    if (textAnswerSection) {
+      textAnswerSection.style.display = isShort ? 'block' : 'none';
+      if (shortAnswerInput) {
+        shortAnswerInput.disabled = !isShort;
+        shortAnswerInput.required = isShort;
+      }
+    }
   }
 
   typeSelect.addEventListener('change', updateVisibility);

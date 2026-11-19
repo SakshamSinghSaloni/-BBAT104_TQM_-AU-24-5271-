@@ -54,7 +54,7 @@
         {% for i in range(1, 5) %}
         <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
           <input type="radio" name="mcq_correct_idx" value="{{ i }}" {% if i == 1 %}checked{% endif %} title="Mark option {{ i }} as correct">
-          <input type="text" name="mcq_option_{{ i }}" class="form-control" placeholder="Option {{ i }}" {% if i <= 2 %}required{% endif %}>
+          <input type="text" id="mcq_option_{{ i }}" name="mcq_option_{{ i }}" class="form-control" placeholder="Option {{ i }}">
         </div>
         {% endfor %}
       </div>
