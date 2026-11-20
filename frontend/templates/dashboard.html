@@ -116,10 +116,12 @@
           <td>{{ q.question_count }} question{% if q.question_count != 1 %}s{% endif %}</td>
           <td style="color: var(--text-muted); font-size: 0.85rem;">{{ q.created_at[:10] }}</td>
           <td style="text-align: right;">
-            <a href="/quizzes/{{ q.id }}/questions" class="btn btn-secondary btn-sm">Edit Questions</a>
-            <form action="/quizzes/{{ q.id }}/sessions" method="post" style="display:inline;">
-              <button type="submit" class="btn btn-success btn-sm">Launch Session</button>
-            </form>
+            <div class="table-actions-stack" style="display: inline-flex; flex-direction: column; align-items: flex-end; gap: 8px;">
+              <a href="/quizzes/{{ q.id }}/questions" class="btn btn-secondary btn-sm btn-action-equal" style="width: 135px; min-width: 135px; height: 34px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; text-align: center; white-space: nowrap;">Edit Questions</a>
+              <form action="/quizzes/{{ q.id }}/sessions" method="post" style="margin: 0; display: block;">
+                <button type="submit" class="btn btn-success btn-sm btn-action-equal" style="width: 135px; min-width: 135px; height: 34px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; text-align: center; white-space: nowrap;">Launch Session</button>
+              </form>
+            </div>
           </td>
         </tr>
         {% endfor %}
