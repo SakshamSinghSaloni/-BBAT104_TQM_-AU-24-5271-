@@ -14,9 +14,9 @@
 
 | Metric | Target | Actual Result | Compliance Status |
 | :--- | :---: | :---: | :---: |
-| **Total Automated Tests** | $\ge 50$ | **54** | **100% Passed (54/54)** |
+| **Total Automated Tests** | $\ge 50$ | **55** | **100% Passed (55/55)** |
 | **Total Manual Test Cases** | $\ge 10$ | **12** | **100% Passed (12/12)** |
-| **Total Verifications** | — | **66** | **100% Pass Rate** |
+| **Total Verifications** | — | **67** | **100% Pass Rate** |
 | **Automated Execution Time** | $< 30\text{ s}$ | **15.76 s** | **Optimal Performance** |
 | **Critical Defects Outstanding** | 0 | **0** | **Zero Known Bugs** |
 | **Anti-Duplicate Defense Tiers** | 4 Tiers | **4 Tiers Verified** | **100% Guarded** |
@@ -174,6 +174,7 @@ venv\Lib\site-packages\fastapi\testclient.py:1
 | `test_foreign_key_cascade_deletion` | Referential Integrity | Deleting quiz cascades to questions/submissions. | **PASS** |
 | `test_q06_unique_session_code_constraint` | `UNIQUE(session_code)` | Rejects session code collision with IntegrityError. | **PASS** |
 | `test_q06_unique_participant_per_session_constraint` | Composite `UNIQUE(session_id, student_identifier)` | Rejects duplicate student enrollment in same session. | **PASS** |
+| `test_user_repository_update_profile_and_password` | Profile Persistence & Security | Verifies display name updates, whitespace trimming, and password hash updates. | **PASS** |
 
 ### 3.6 Automated Grading Engine (`tests/test_grading.py`)
 *Validates customer-focused input tolerance and grading precision.*
