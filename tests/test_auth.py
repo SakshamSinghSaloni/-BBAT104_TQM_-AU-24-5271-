@@ -220,3 +220,22 @@ def test_change_password_invalid_current_rejected(client):
     )
     assert resp.status_code == 401
     assert "Current password is incorrect" in resp.json()["detail"]
+
+
+def test_update_profile_unauthenticated_rejected(client):
+    """Verify that unauthenticated callers cannot update profile."""
+    resp = client.put("/api/auth/profile", json={"name": "Attacker"})
+    assert resp.status_code == 401
+
+
+def test_change_password_short_password_rejected(client):
+    """Verify that attempting to change password to < 6 chars is rejected."""
+    client.post(
+        "/api/auth/register",
+        json={"name": "Prof. ShortPwd", "email": "prof.short@example.edu", "password": "validPassword123"},
+    )
+    resp = client.put(
+        "/api/auth/change-password",
+        json={"current_password": "validPassword123", "new_password": "123"},
+    )
+    assert resp.status_code == 422

@@ -14,9 +14,9 @@
 
 | Metric | Target | Actual Result | Compliance Status |
 | :--- | :---: | :---: | :---: |
-| **Total Automated Tests** | $\ge 50$ | **64** | **100% Passed (64/64)** |
-| **Total Manual Test Cases** | $\ge 10$ | **12** | **100% Passed (12/12)** |
-| **Total Verifications** | — | **76** | **100% Pass Rate** |
+| **Total Automated Tests** | $\ge 50$ | **66** | **100% Passed (66/66)** |
+| **Total Manual Test Cases** | $\ge 10$ | **13** | **100% Passed (13/13)** |
+| **Total Verifications** | — | **79** | **100% Pass Rate** |
 | **Automated Execution Time** | $< 30\text{ s}$ | **15.76 s** | **Optimal Performance** |
 | **Critical Defects Outstanding** | 0 | **0** | **Zero Known Bugs** |
 | **Anti-Duplicate Defense Tiers** | 4 Tiers | **4 Tiers Verified** | **100% Guarded** |
@@ -119,6 +119,8 @@ venv\Lib\site-packages\fastapi\testclient.py:1
 | `test_update_profile_blank_name_rejected` | Tier 2 validator rejects blank or whitespace-only name payload. | 422 | **PASS** |
 | `test_change_password_success` | Verifies current credentials, hashes new password, and re-authenticates. | 200 | **PASS** |
 | `test_change_password_invalid_current_rejected` | Incorrect current password rejected with generic unauthorized error. | 401 | **PASS** |
+| `test_update_profile_unauthenticated_rejected` | Unauthenticated callers cannot modify instructor profile display name. | 401 | **PASS** |
+| `test_change_password_short_password_rejected` | Tier 2 validator rejects new passwords shorter than 6 characters. | 422 | **PASS** |
 
 ### 3.2 Live Session & Assessment Engine (`tests/test_sessions.py`)
 *Validates session lifecycles, ephemeral participant isolation, anti-duplicate join constraints, auto-grading, and analytics.*
@@ -228,6 +230,7 @@ All 12 structured manual test cases specified in `docs/manual-test-plan.md` were
 | **TC-MAN-10** | Integrity | Question Fetch Answer Hiding | Inspect browser network payload | Question prompts and options present; `correct_answer` completely omitted. | **PASS** |
 | **TC-MAN-11** | Evaluation | Quiz Submission & Auto-Grading | Submit correct responses | Auto-graded in $<100\text{ ms}$; scorecard renders `100.0%` with point badges. | **PASS** |
 | **TC-MAN-12** | Integrity | Duplicate Submission Block | Re-submit `/submit` payload | Intercepted; redirected with alert: `Participant has already submitted.` | **PASS** |
+| **TC-MAN-13** | Identity & Security | Profile Update & Password Lifecycle | Update name to `Prof. Alexander Bell`, change password | Name persists across views; blank name rejected; password updates and authenticates. | **PASS** |
 
 ---
 

@@ -166,13 +166,27 @@ All test scenarios utilize clean, generic data to validate production readiness.
 - **Expected Outcome:** System automatically detects existing submission and redirects directly to `/session/{code}/results?participant_id={id}`. Submitting a duplicate payload via POST returns HTTP 409 Conflict.
 - **Status:** **PASS**
 
+#### TC-MAN-13: Instructor Profile & Account Settings Lifecycle
+- **Category:** Identity & Security Management
+- **Preconditions:** Instructor is authenticated and on `/dashboard`.
+- **Steps:**
+  1. Click on the user badge `👤 {Name}` in the navigation bar.
+  2. Verify redirection to `/profile` displaying Account Overview, role badge, member-since date, and teaching impact stats.
+  3. Under "Edit Display Name", update name to `Prof. Alexander Bell` and submit form.
+  4. Verify green success flash banner: `Profile display name updated successfully.` and navbar badge updates immediately.
+  5. Attempt to save an empty/whitespace name `   `. Verify rejection with red danger alert.
+  6. Under "Security & Password", update password to a valid new string ($\ge 6$ characters).
+  7. Log out and verify successful re-authentication with new credentials.
+- **Expected Outcome:** Profile settings reflect updates dynamically, input sanitization rejects blank names, and password updates verify current credentials.
+- **Status:** **PASS**
+
 ---
 
 ## 4. Verification Summary
 
 | Metric | Target | Verified Actual |
 |--------|--------|-----------------|
-| **Automated Tests** | $\ge 45$ | **52 Passing (100%)** |
-| **Manual Test Cases** | $\ge 10$ | **12 Executed & Verified (100% Pass)** |
+| **Automated Tests** | $\ge 45$ | **66 Passing (100%)** |
+| **Manual Test Cases** | $\ge 10$ | **13 Executed & Verified (100% Pass)** |
 | **Duplicate Prevention Layers** | 4 Tiers | **Storage, Pre-Add, Service, and UI Modals Verified** |
 | **Cross-Browser Styling** | Responsive | **Consistent rendering across desktop & mobile viewport sizes** |
