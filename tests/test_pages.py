@@ -17,7 +17,7 @@ def test_public_pages_render(client):
 
 def test_protected_pages_redirect_unauthenticated(client):
     """Verify that visiting protected instructor views redirects unauthenticated guests to login."""
-    protected_routes = ["/dashboard", "/quizzes", "/quizzes/1/questions", "/sessions/1/results"]
+    protected_routes = ["/dashboard", "/quizzes", "/quizzes/1/questions", "/sessions/1/results", "/profile"]
     for route in protected_routes:
         resp = client.get(route, follow_redirects=False)
         assert resp.status_code == 303
@@ -206,3 +206,63 @@ def test_add_question_web_form(auth_client):
     assert "Name the memory unit holding currently executing instructions." in final_page.text
     assert "SHORT_ANSWER" in final_page.text
     assert "Instruction Register" in final_page.text
+
+
+def test_profile_page_renders_for_authenticated_teacher(auth_client):
+    """Verify that an authenticated instructor can view the Profile & Settings page."""
+    resp = auth_client.get("/profile")
+    assert resp.status_code == 200
+    assert "Instructor Profile" in resp.text
+    assert "Account Overview" in resp.text
+    assert "Teaching Activity & Impact" in resp.text
+    assert "Edit Display Name" in resp.text
+    assert "Security & Password" in resp.text
+
+
+def test_profile_update_display_name_web_form(auth_client):
+    """Verify that submitting the web form updates the instructor's display name."""
+    resp = auth_client.post(
+        "/profile",
+        data={"name": "Prof. Alexander Graham"},
+    )
+    assert resp.status_code == 200
+    assert "Profile display name updated successfully." in resp.text
+    assert "Prof. Alexander Graham" in resp.text
+
+
+def test_profile_update_display_name_blank_rejected(auth_client):
+    """Verify that submitting an empty or whitespace name is rejected with a danger flash alert."""
+    resp = auth_client.post(
+        "/profile",
+        data={"name": "   "},
+    )
+    assert resp.status_code == 400
+    assert "Display name cannot be empty" in resp.text
+
+
+def test_profile_change_password_web_form(auth_client):
+    """Verify that submitting valid password change form succeeds."""
+    resp = auth_client.post(
+        "/profile/change-password",
+        data={
+            "current_password": "securepassword123",
+            "new_password": "newSecurePassword789",
+            "confirm_password": "newSecurePassword789",
+        },
+    )
+    assert resp.status_code == 200
+    assert "Password updated successfully." in resp.text
+
+
+def test_profile_change_password_mismatch_rejected(auth_client):
+    """Verify that mismatched new passwords are rejected with a danger flash alert."""
+    resp = auth_client.post(
+        "/profile/change-password",
+        data={
+            "current_password": "securepassword123",
+            "new_password": "newSecurePassword789",
+            "confirm_password": "differentPassword123",
+        },
+    )
+    assert resp.status_code == 400
+    assert "New password and confirmation do not match." in resp.text

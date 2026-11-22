@@ -148,7 +148,7 @@ flowchart TD
 | **NFR-05** | **Concurrency & Scalability** | System architecture supports concurrent student submissions during live exam sessions without table/file locking or deadlocks. | `VoS-15` (SH-06) | Must |
 | **NFR-06** | **Schema Versioning** | Database DDL is versioned and automated via migration scripts (Alembic). Zero manual un-tracked schema alterations. | `VoS-16` (SH-06) | Must |
 | **NFR-07** | **Observability** | `GET /` serves as a health probe returning HTTP 200 with service metadata and documentation links in $< 50\text{ms}$. | `VoS-17` (SH-06) | Must |
-| **NFR-08** | **Testability & Velocity** | Comprehensive automated test suite executes across unit, integration, and UI layers with $100\%$ pass rate (59 automated tests + 12 manual scenarios). | `VoS-10` (SH-03) | Must |
+| **NFR-08** | **Testability & Velocity** | Comprehensive automated test suite executes across unit, integration, and UI layers with $100\%$ pass rate (64 automated tests + 12 manual scenarios). | `VoS-10` (SH-03) | Must |
 
 ---
 
@@ -192,7 +192,7 @@ This matrix establishes the complete TQM audit trail connecting each **Stakehold
 | **VoS-07** | SH-02 (Student) | `FR-13` | `backend/services/grading_service.py` | `test_grading.py` (all tests) | ✅ Verified |
 | **VoS-08** | SH-03 (Professor) | System Pipeline | `docs/` (`stakeholders.md` $\rightarrow$ `SRS.md`) | Stage-by-stage document audit | ✅ Verified |
 | **VoS-09** | SH-03 (Professor) | Defect Logging | `docs/testing.md`, `docs/defect-log.md` | JUnit XML report (`test-results/automated-results.xml`) + Defect Register | ✅ Verified |
-| **VoS-10** | SH-03 (Professor) | Q06 Coverage | `tests/` (59 automated test cases across 5 test modules) | `pytest tests/ -v` (100% pass rate, 59 passed in ~20s) | ✅ Verified |
+| **VoS-10** | SH-03 (Professor) | Q06 Coverage | `tests/` (64 automated test cases across 5 test modules) | `pytest tests/ -v` (100% pass rate, 64 passed in ~25s) | ✅ Verified |
 | **VoS-11** | SH-04 (University) | `NFR-01` | `backend/database.py` | `test_foreign_key_cascade_deletion` | ✅ Verified |
 | **VoS-12** | SH-04 (University) | `NFR-02` | `backend/models.py`, `backend/repositories/` | `test_tables_created_successfully` (schema inspection) | ✅ Verified |
 | **VoS-13** | SH-05 (Developer) | `NFR-04` | `backend/` (API $\rightarrow$ Service $\rightarrow$ Repo) | Codebase inspection (zero cross-tier leakage) | ✅ Verified |

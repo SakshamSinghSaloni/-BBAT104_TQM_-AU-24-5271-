@@ -14,9 +14,9 @@
 
 | Metric | Target | Actual Result | Compliance Status |
 | :--- | :---: | :---: | :---: |
-| **Total Automated Tests** | $\ge 50$ | **59** | **100% Passed (59/59)** |
+| **Total Automated Tests** | $\ge 50$ | **64** | **100% Passed (64/64)** |
 | **Total Manual Test Cases** | $\ge 10$ | **12** | **100% Passed (12/12)** |
-| **Total Verifications** | — | **71** | **100% Pass Rate** |
+| **Total Verifications** | — | **76** | **100% Pass Rate** |
 | **Automated Execution Time** | $< 30\text{ s}$ | **15.76 s** | **Optimal Performance** |
 | **Critical Defects Outstanding** | 0 | **0** | **Zero Known Bugs** |
 | **Anti-Duplicate Defense Tiers** | 4 Tiers | **4 Tiers Verified** | **100% Guarded** |
@@ -148,6 +148,11 @@ venv\Lib\site-packages\fastapi\testclient.py:1
 | `test_student_web_flow` | End-to-end student flow: Join $\rightarrow$ Take $\rightarrow$ Submit $\rightarrow$ Scorecard. | Scorecard Renders 100% | **PASS** |
 | `test_create_quiz_web_form` | Web form creates quiz and intercepts duplicate title submission. | Flash Danger Alert | **PASS** |
 | `test_add_question_web_form` | Web form adds MCQ, True/False, and Short Answer questions. | All 3 Types Display | **PASS** |
+| `test_profile_page_renders_for_authenticated_teacher` | Authenticated profile displays account overview, activity stats, and forms. | Profile & Stats Present | **PASS** |
+| `test_profile_update_display_name_web_form` | Web form updates teacher display name and returns success flash. | Success Flash Alert | **PASS** |
+| `test_profile_update_display_name_blank_rejected` | Tier 2 validator rejects blank name submission via HTML form. | Danger Flash Alert (400) | **PASS** |
+| `test_profile_change_password_web_form` | Web form updates teacher password and confirms success. | Success Flash Alert | **PASS** |
+| `test_profile_change_password_mismatch_rejected` | Web form rejects mismatched new password and confirmation. | Danger Flash Alert (400) | **PASS** |
 
 ### 3.4 REST API & CRUD Operations (`tests/test_api.py`)
 *Validates all backend REST endpoints under automated HTTP payloads.*

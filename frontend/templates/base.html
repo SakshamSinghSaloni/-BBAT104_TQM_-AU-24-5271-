@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}Online Quiz System{% endblock %}</title>
-  <link rel="stylesheet" href="/static/css/style.css?v=2.0.2">
+  <link rel="stylesheet" href="/static/css/style.css?v=2.0.3">
   {% block head %}{% endblock %}
 </head>
 <body>
@@ -20,7 +20,9 @@
           <li><a href="/dashboard">Dashboard</a></li>
           <li><a href="/quizzes">Quizzes</a></li>
           <li>
-            <span class="user-badge">👤 {{ current_user.name }}</span>
+            <a href="/profile" class="user-badge-link" title="Instructor Profile & Settings">
+              <span class="user-badge">👤 {{ current_user.name }}</span>
+            </a>
           </li>
           <li>
             <form action="/auth/logout" method="post" style="display:inline;">

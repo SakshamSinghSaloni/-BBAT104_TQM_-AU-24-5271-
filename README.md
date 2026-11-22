@@ -207,13 +207,13 @@ pytest tests/ -v
 ├── requirements.txt                 # Python project dependencies
 ├── test-results/
 │   └── automated-results.xml        # JUnit XML Test Execution Artifact
-└── tests/                           # Automated test suites (59 tests, 100% passing)
+└── tests/                           # Automated test suites (64 tests, 100% passing)
     ├── conftest.py                  # Shared isolated SQLite test client fixtures
     ├── test_api.py                  # REST API contract & CRUD endpoints (14 tests)
     ├── test_auth.py                 # Registration, login, profile & password auth (12 tests)
     ├── test_database.py             # Schema & cascading integrity (5 tests)
     ├── test_grading.py              # Evaluation & grading logic (4 tests)
-    ├── test_pages.py                # Web SSR page workflows & student flow (7 tests)
+    ├── test_pages.py                # Web SSR page workflows, student flow & profile (12 tests)
     ├── test_services.py             # Pre-add validation & search-before-add (7 tests)
     └── test_sessions.py             # Live session lifecycle & auto-grading (10 tests)
 ```
@@ -222,16 +222,16 @@ pytest tests/ -v
 
 ## 7. Quality Assurance & Testing Summary
 
-All **59 automated unit and integration tests** execute successfully with a **100% pass rate** in ~20 seconds:
+All **64 automated unit and integration tests** execute successfully with a **100% pass rate** in ~25 seconds:
 - **`tests/test_auth.py` (12 tests):** Validates teacher registration, duplicate email rejection (409), password hashing, login, authentication cookies, logout, profile name update, Tier 2 blank name rejection, and password changes.
 - **`tests/test_sessions.py` (10 tests):** Validates session code generation, participant enrollment, duplicate join rejection, student answer isolation, submission auto-grading, duplicate submission blocking, and analytics.
-- **`tests/test_pages.py` (7 tests):** Validates server-rendered HTML pages, unauthenticated redirect protection, teacher dashboard, web form quiz creation with duplicate detection, question authoring across MCQ/True-False/Short-Answer, and end-to-end student assessment flow.
+- **`tests/test_pages.py` (12 tests):** Validates server-rendered HTML pages, unauthenticated redirect protection, teacher dashboard, web form quiz creation with duplicate detection, question authoring across MCQ/True-False/Short-Answer, student assessment flow, profile page rendering, display name updating, blank name rejection, password updating, and password mismatch rejection.
 - **`tests/test_api.py` (14 tests):** Validates REST API endpoints for quizzes and questions, duplicate rejection responses (`409 Conflict`), and update constraints.
 - **`tests/test_services.py` (7 tests):** Validates whitespace stripping, pre-add validation, MCQ structural consistency, and Search-Before-Add duplicate detection.
 - **`tests/test_database.py` (5 tests):** Validates table creation, foreign key cascading deletion, unique session code constraints, composite unique participant constraints (`uq_session_participant`), and user profile/password persistence.
 - **`tests/test_grading.py` (4 tests):** Validates case-insensitive short answer evaluation, whitespace trimming, and true/false verification.
 
-In addition, **12 structured manual test cases (`TC-MAN-01` to `TC-MAN-12`)** in `docs/manual-test-plan.md` have been verified passing in live browser sessions, yielding **71 total verified checks**.
+In addition, **12 structured manual test cases (`TC-MAN-01` to `TC-MAN-12`)** in `docs/manual-test-plan.md` have been verified passing in live browser sessions, yielding **76 total verified checks**.
 
 ---
 

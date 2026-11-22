@@ -100,6 +100,19 @@ body {
   padding: 0.35rem 0.75rem;
   border-radius: 9999px;
   font-weight: 600;
+  transition: background-color 0.15s, border-color 0.15s;
+  border: 1px solid var(--border-color);
+}
+
+.user-badge-link {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+
+.user-badge-link:hover .user-badge {
+  background-color: #e2e8f0;
+  border-color: #cbd5e1;
 }
 
 /* ==========================================================================

@@ -14,7 +14,8 @@ from sqlalchemy.orm import Session
 
 from backend.database import get_db
 from backend.middleware.auth import get_current_user_optional
-from backend.models import QuestionCreate, QuizCreate
+from backend.models import QuestionCreate, QuizCreate, UserProfileUpdate
+from backend.services.auth_service import AuthService
 from backend.services.question_service import QuestionService
 from backend.services.quiz_service import QuizService
 from backend.services.session_service import SessionService
@@ -356,3 +357,135 @@ def session_results_page(
         name="sessions/results.html",
         context={"request": request, "current_user": current_user, "results": results},
     )
+
+
+@router.get("/profile", response_class=HTMLResponse)
+def profile_page(
+    request: Request,
+    current_user=Depends(get_current_user_optional),
+    db: Session = Depends(get_db),
+):
+    """Teacher profile overview and account settings."""
+    guard = require_auth(current_user)
+    if guard:
+        return guard
+
+    auth_service = AuthService(db)
+    stats = auth_service.get_teacher_activity_stats(current_user.id)
+    return templates.TemplateResponse(
+        request=request,
+        name="profile.html",
+        context={
+            "request": request,
+            "current_user": current_user,
+            "stats": stats,
+        },
+    )
+
+
+@router.post("/profile", response_class=HTMLResponse)
+def update_profile_form(
+    request: Request,
+    name: str = Form(...),
+    current_user=Depends(get_current_user_optional),
+    db: Session = Depends(get_db),
+):
+    """Update teacher display name with validation."""
+    guard = require_auth(current_user)
+    if guard:
+        return guard
+
+    auth_service = AuthService(db)
+    try:
+        profile_in = UserProfileUpdate(name=name)
+        updated_user = auth_service.update_profile(current_user.id, profile_in)
+        stats = auth_service.get_teacher_activity_stats(current_user.id)
+        return templates.TemplateResponse(
+            request=request,
+            name="profile.html",
+            context={
+                "request": request,
+                "current_user": updated_user,
+                "stats": stats,
+                "flash_message": "Profile display name updated successfully.",
+                "flash_type": "success",
+            },
+        )
+    except (HTTPException, ValueError, ValidationError) as e:
+        if isinstance(e, ValidationError):
+            err_msg = "; ".join(err.get("msg", str(err)) for err in e.errors())
+        else:
+            err_msg = e.detail if isinstance(e, HTTPException) else str(e)
+        stats = auth_service.get_teacher_activity_stats(current_user.id)
+        return templates.TemplateResponse(
+            request=request,
+            name="profile.html",
+            context={
+                "request": request,
+                "current_user": current_user,
+                "stats": stats,
+                "flash_message": err_msg,
+                "flash_type": "danger",
+            },
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
+
+@router.post("/profile/change-password", response_class=HTMLResponse)
+def change_password_form(
+    request: Request,
+    current_password: str = Form(...),
+    new_password: str = Form(...),
+    confirm_password: str = Form(...),
+    current_user=Depends(get_current_user_optional),
+    db: Session = Depends(get_db),
+):
+    """Change instructor account password."""
+    guard = require_auth(current_user)
+    if guard:
+        return guard
+
+    auth_service = AuthService(db)
+    stats = auth_service.get_teacher_activity_stats(current_user.id)
+
+    if new_password != confirm_password:
+        return templates.TemplateResponse(
+            request=request,
+            name="profile.html",
+            context={
+                "request": request,
+                "current_user": current_user,
+                "stats": stats,
+                "flash_message": "New password and confirmation do not match.",
+                "flash_type": "danger",
+            },
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
+    try:
+        auth_service.change_password(current_user.id, current_password, new_password)
+        return templates.TemplateResponse(
+            request=request,
+            name="profile.html",
+            context={
+                "request": request,
+                "current_user": current_user,
+                "stats": stats,
+                "flash_message": "Password updated successfully.",
+                "flash_type": "success",
+            },
+        )
+    except (HTTPException, ValueError, ValidationError) as e:
+        err_msg = e.detail if isinstance(e, HTTPException) else str(e)
+        return templates.TemplateResponse(
+            request=request,
+            name="profile.html",
+            context={
+                "request": request,
+                "current_user": current_user,
+                "stats": stats,
+                "flash_message": err_msg,
+                "flash_type": "danger",
+            },
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )

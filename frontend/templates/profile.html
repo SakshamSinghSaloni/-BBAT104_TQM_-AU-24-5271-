@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}Instructor Profile & Account Settings{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Instructor Profile</h1>
+    <p class="page-subtitle">Manage your credentials, update your display identity, and review your teaching impact.</p>
+  </div>
+  <div>
+    <a href="/dashboard" class="btn btn-secondary">&larr; Back to Dashboard</a>
+  </div>
+</div>
+
+<!-- Identity & Teaching Impact Overview -->
+<div class="grid-2" style="margin-bottom: 2rem;">
+  <!-- Profile Summary Card -->
+  <div class="card" style="margin-bottom: 0;">
+    <div class="card-title">
+      <span>👤 Account Overview</span>
+      <span class="badge badge-active" style="text-transform: capitalize;">{{ current_user.role }}</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 1.25rem; margin-bottom: 1.5rem; padding-bottom: 1.25rem; border-bottom: 1px solid var(--border-color);">
+      <div style="width: 64px; height: 64px; border-radius: 50%; background: var(--primary-light); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 1.8rem; font-weight: 700; border: 2px solid var(--border-focus);">
+        {{ current_user.name[:1] | upper }}
+      </div>
+      <div>
+        <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 0.2rem;">{{ current_user.name }}</h2>
+        <div style="color: var(--text-muted); font-size: 0.9rem;">{{ current_user.email }}</div>
+        <div style="color: var(--text-muted); font-size: 0.8rem; margin-top: 0.25rem;">Member since {{ current_user.created_at[:10] }}</div>
+      </div>
+    </div>
+    
+    <div style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.6;">
+      <p>This account is authorized to create and manage quizzes, configure automated evaluation criteria, launch live assessment sessions, and review student scorecards.</p>
+    </div>
+  </div>
+
+  <!-- Teaching Activity Stats -->
+  <div class="card" style="margin-bottom: 0;">
+    <div class="card-title">
+      <span>📊 Teaching Activity & Impact</span>
+    </div>
+    <div class="grid-2" style="gap: 1rem;">
+      <div class="stat-card">
+        <div class="stat-label">Quizzes Authored</div>
+        <div class="stat-value">{{ stats.total_quizzes }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Active Sessions</div>
+        <div class="stat-value" style="color: var(--success);">{{ stats.active_sessions }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Students Enrolled</div>
+        <div class="stat-value">{{ stats.total_participants }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Assessments Graded</div>
+        <div class="stat-value">{{ stats.total_submissions }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Settings & Credentials Section -->
+<div class="grid-2">
+  <!-- Update Name Card -->
+  <div class="card">
+    <div class="card-title">
+      <span>✏️ Edit Display Name</span>
+    </div>
+    <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+      Update how your name appears on assessment rubrics, session invites, and student scorecards.
+    </p>
+    <form action="/profile" method="post">
+      <div class="form-group">
+        <label for="name" class="form-label">Full Name <span style="color: var(--danger)">*</span></label>
+        <input type="text" id="name" name="name" class="form-control" value="{{ current_user.name }}" required maxlength="100">
+        <div class="form-hint">Must be 1–100 characters. Leading and trailing whitespace will be automatically sanitized.</div>
+      </div>
+      <button type="submit" class="btn btn-primary" style="margin-top: 0.5rem;">Save Changes</button>
+    </form>
+  </div>
+
+  <!-- Change Password Card -->
+  <div class="card">
+    <div class="card-title">
+      <span>🔒 Security & Password</span>
+    </div>
+    <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+      Ensure your instructor account remains secure by choosing a strong password.
+    </p>
+    <form action="/profile/change-password" method="post">
+      <div class="form-group">
+        <label for="current_password" class="form-label">Current Password <span style="color: var(--danger)">*</span></label>
+        <input type="password" id="current_password" name="current_password" class="form-control" required placeholder="Enter current password">
+      </div>
+      <div class="form-group">
+        <label for="new_password" class="form-label">New Password <span style="color: var(--danger)">*</span></label>
+        <input type="password" id="new_password" name="new_password" class="form-control" required minlength="6" placeholder="At least 6 characters">
+      </div>
+      <div class="form-group">
+        <label for="confirm_password" class="form-label">Confirm New Password <span style="color: var(--danger)">*</span></label>
+        <input type="password" id="confirm_password" name="confirm_password" class="form-control" required minlength="6" placeholder="Repeat new password">
+      </div>
+      <button type="submit" class="btn btn-secondary" style="margin-top: 0.5rem;">Change Password</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
