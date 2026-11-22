@@ -29,6 +29,20 @@
 - **Purpose:** Return current authenticated user profile.
 - **Response:** `200 OK` with User object.
 
+### PUT /api/auth/profile — Update Profile Name
+- **Purpose:** Update authenticated instructor's display name.
+- **Payload:** `{"name": "Prof. Alexander Bell"}`
+- **Q06 Defense:** Tier 2 pre-add validator trims whitespace and rejects empty/blank strings (`422 Unprocessable Entity`).
+- **Response:** `200 OK` with updated User object.
+- **Errors:** `401 Unauthorized` if not authenticated; `422 Unprocessable Entity` if name is empty or exceeds 100 characters.
+
+### PUT /api/auth/change-password — Change Password
+- **Purpose:** Update authenticated instructor's password.
+- **Payload:** `{"current_password": "oldPassword123", "new_password": "newSecurePassword456"}`
+- **Security Defense:** Verifies existing credentials using bcrypt before updating; enforces $\ge 6$ character password length.
+- **Response:** `200 OK` with `{"message": "Password changed successfully."}`.
+- **Errors:** `401 Unauthorized` if current password is incorrect; `422 Unprocessable Entity` if new password is too short.
+
 ---
 
 ## 2. Quiz Endpoints (`/api/quizzes`)

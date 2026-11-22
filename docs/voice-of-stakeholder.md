@@ -59,6 +59,7 @@ flowchart TD
 | **VoS-02** | SH-01 (Teacher) | *"I shouldn't accidentally put the same question into a quiz multiple times."* | Prevent duplicate questions within a quiz. | Composite uniqueness validation. | Search before adding question to quiz. Duplicate question text in the same `quiz_id` rejected with 409. | `FR-Q1`, `FR-Q3`, `FR-05` |
 | **VoS-03** | SH-01 (Teacher) | *"If I misclick delete, my entire quiz shouldn't vanish without warning."* | Error-proofing against accidental data deletion. | Poka-Yoke confirmation dialogs. | Every delete request must be preceded by an interactive prompt requiring user confirmation. | `FR-Q4`, `FR-04`, `FR-08` |
 | **VoS-04** | SH-01 (Teacher) | *"I need to see how many questions are in each quiz at a glance."* | Intuitive assessment management. | Aggregate reporting in list views. | Quiz list view displays real-time question count and creation timestamps. | `FR-02` |
+| **VoS-18** | SH-01 (Teacher) | *"I need to view my teaching impact metrics, keep my profile name up to date, and maintain secure account credentials."* | Instructor profile, teaching analytics, and credential management. | Authenticated profile dashboard and Tier 2 validated updates. | Profile view renders accurate live stats; display name updates sanitize whitespace; password updates verify current credentials. | `FR-15` |
 
 ---
 

@@ -125,6 +125,7 @@ flowchart TD
 | **FR-12** | **Automated Objective Grading:** The system evaluates submissions against answer keys. Short-answer evaluations are normalized ($\text{trim}$ + $\text{lowercase}$) to eliminate false negatives. | `VoS-05` (SH-02) | Should | Reviews 2–3 |
 | **FR-13** | **View Performance Results:** Students immediately receive their final score, total points, and answer evaluations upon concluding the quiz. | `VoS-07` (SH-02) | Should | Reviews 2–3 |
 | **FR-14** | **Instructor Session Summary:** Instructors can view participant rosters, individual scores, and class aggregate statistics. | `VoS-04` (SH-01) | Could | Reviews 3–4 |
+| **FR-15** | **Instructor Profile & Account Management:** Instructors can view account details, member-since date, and teaching impact metrics, update their display name with Tier 2 validation, and securely change their account password. | `VoS-18` (SH-01) | Should | Review 4 |
 
 ### 3.4 Q06 Quality Goal Requirements (Reduce Duplicate Entries)
 
@@ -200,3 +201,4 @@ This matrix establishes the complete TQM audit trail connecting each **Stakehold
 | **VoS-15** | SH-06 (SysAdmin) | `NFR-05` | `backend/database.py`, `backend/db_models.py` | SQLAlchemy connection pooling + PostgreSQL setup (ADR-002) | ✅ Verified |
 | **VoS-16** | SH-06 (SysAdmin) | `NFR-06` | `alembic/` | `alembic upgrade head` automated execution | ✅ Verified |
 | **VoS-17** | SH-06 (SysAdmin) | `NFR-07` | `backend/main.py` | `GET /` endpoint health check verification | ✅ Verified |
+| **VoS-18** | SH-01 (Teacher) | `FR-15` | `backend/api/auth.py`, `frontend/routes/teacher_routes.py` | `test_profile_page_renders_for_authenticated_teacher`, `TC-MAN-13` | ✅ Verified |
