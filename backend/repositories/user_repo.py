@@ -39,3 +39,23 @@ class UserRepository:
     def list_all(self) -> list[User]:
         stmt = select(User).order_by(User.id.asc())
         return list(self.db.execute(stmt).scalars().all())
+
+    def update_profile(self, user_id: int, name: str) -> User | None:
+        """Update a user's display name."""
+        user = self.get_by_id(user_id)
+        if not user:
+            return None
+        user.name = name.strip()
+        self.db.commit()
+        self.db.refresh(user)
+        return user
+
+    def update_password(self, user_id: int, password_hash: str) -> User | None:
+        """Update a user's hashed password."""
+        user = self.get_by_id(user_id)
+        if not user:
+            return None
+        user.password_hash = password_hash
+        self.db.commit()
+        self.db.refresh(user)
+        return user

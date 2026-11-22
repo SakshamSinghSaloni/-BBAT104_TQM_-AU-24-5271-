@@ -212,6 +212,33 @@ class UserResponse(BaseModel):
     created_at: str
 
 
+class UserProfileUpdate(BaseModel):
+    """Payload for updating user profile display name."""
+    name: str = Field(..., min_length=1, max_length=100, description="Updated display name")
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v: str) -> str:
+        cleaned = v.strip()
+        if not cleaned:
+            raise ValueError("Display name cannot be empty or whitespace only.")
+        return cleaned
+
+
+class UserPasswordChange(BaseModel):
+    """Payload for changing instructor account password."""
+    current_password: str = Field(..., min_length=1, description="Current password")
+    new_password: str = Field(..., min_length=6, max_length=100, description="New password")
+    confirm_password: Optional[str] = Field(None, description="Password confirmation")
+
+    @field_validator("new_password")
+    @classmethod
+    def validate_new_password(cls, v: str) -> str:
+        if len(v) < 6:
+            raise ValueError("New password must be at least 6 characters.")
+        return v
+
+
 # ==========================================
 # SESSION & PARTICIPANT SCHEMAS
 # ==========================================

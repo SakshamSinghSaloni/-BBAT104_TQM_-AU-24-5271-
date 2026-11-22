@@ -144,3 +144,32 @@ def test_q06_unique_participant_per_session_constraint(test_db: Session):
     with pytest.raises(IntegrityError):
         test_db.commit()
     test_db.rollback()
+
+
+def test_user_repository_update_profile_and_password(test_db: Session):
+    """Verify UserRepository can update profile display name and password hash."""
+    from backend.repositories.user_repo import UserRepository
+
+    repo = UserRepository(test_db)
+    user = repo.create(
+        email="prof.test@example.edu",
+        password_hash="hash_old",
+        name="Prof. Original Name",
+        role="teacher",
+    )
+    assert user.id is not None
+    assert user.name == "Prof. Original Name"
+
+    # 1. Update Profile (Name)
+    updated = repo.update_profile(user.id, "  Prof. Updated Name  ")
+    assert updated is not None
+    assert updated.name == "Prof. Updated Name"
+
+    # 2. Update Password Hash
+    updated_pwd = repo.update_password(user.id, "hash_new_secure")
+    assert updated_pwd is not None
+    assert updated_pwd.password_hash == "hash_new_secure"
+
+    # 3. Nonexistent user returns None
+    assert repo.update_profile(999999, "Ghost") is None
+    assert repo.update_password(999999, "GhostHash") is None
