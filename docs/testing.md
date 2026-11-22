@@ -14,9 +14,9 @@
 
 | Metric | Target | Actual Result | Compliance Status |
 | :--- | :---: | :---: | :---: |
-| **Total Automated Tests** | $\ge 50$ | **55** | **100% Passed (55/55)** |
+| **Total Automated Tests** | $\ge 50$ | **59** | **100% Passed (59/59)** |
 | **Total Manual Test Cases** | $\ge 10$ | **12** | **100% Passed (12/12)** |
-| **Total Verifications** | — | **67** | **100% Pass Rate** |
+| **Total Verifications** | — | **71** | **100% Pass Rate** |
 | **Automated Execution Time** | $< 30\text{ s}$ | **15.76 s** | **Optimal Performance** |
 | **Critical Defects Outstanding** | 0 | **0** | **Zero Known Bugs** |
 | **Anti-Duplicate Defense Tiers** | 4 Tiers | **4 Tiers Verified** | **100% Guarded** |
@@ -115,6 +115,10 @@ venv\Lib\site-packages\fastapi\testclient.py:1
 | `test_login_nonexistent_user` | Unknown email rejected without revealing user existence. | 401 | **PASS** |
 | `test_auth_me_endpoint` | Authenticated session cookie unpacks user profile safely. | 200 | **PASS** |
 | `test_logout` | Logout endpoint clears session cookie and revokes access. | 200 | **PASS** |
+| `test_update_profile_success` | Valid display name update persists and is reflected on `/api/auth/me`. | 200 | **PASS** |
+| `test_update_profile_blank_name_rejected` | Tier 2 validator rejects blank or whitespace-only name payload. | 422 | **PASS** |
+| `test_change_password_success` | Verifies current credentials, hashes new password, and re-authenticates. | 200 | **PASS** |
+| `test_change_password_invalid_current_rejected` | Incorrect current password rejected with generic unauthorized error. | 401 | **PASS** |
 
 ### 3.2 Live Session & Assessment Engine (`tests/test_sessions.py`)
 *Validates session lifecycles, ephemeral participant isolation, anti-duplicate join constraints, auto-grading, and analytics.*

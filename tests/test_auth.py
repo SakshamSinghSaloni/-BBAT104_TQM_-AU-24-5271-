@@ -137,3 +137,86 @@ def test_logout(client):
     # Cookie should be deleted / expired
     cookie = logout_resp.cookies.get("quiz_session")
     assert cookie is None or cookie == '""'
+
+
+def test_update_profile_success(client):
+    """Verify that authenticated teacher can update their display name."""
+    client.post(
+        "/api/auth/register",
+        json={"name": "Prof. Original", "email": "prof.orig@example.edu", "password": "password123"},
+    )
+
+    resp = client.put(
+        "/api/auth/profile",
+        json={"name": "Prof. Renamed Instructor"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["name"] == "Prof. Renamed Instructor"
+
+    # Verify /me reflects updated name
+    me_resp = client.get("/api/auth/me")
+    assert me_resp.json()["name"] == "Prof. Renamed Instructor"
+
+
+def test_update_profile_blank_name_rejected(client):
+    """Tier 2: Verify that empty or whitespace-only name updates are rejected."""
+    client.post(
+        "/api/auth/register",
+        json={"name": "Prof. Valid", "email": "prof.valid@example.edu", "password": "password123"},
+    )
+
+    # Empty string
+    resp1 = client.put("/api/auth/profile", json={"name": ""})
+    assert resp1.status_code == 422
+
+    # Whitespace only
+    resp2 = client.put("/api/auth/profile", json={"name": "   "})
+    assert resp2.status_code == 422
+
+
+def test_change_password_success(client):
+    """Verify that teacher can change their password and authenticate with the new credentials."""
+    client.post(
+        "/api/auth/register",
+        json={"name": "Prof. PwdTest", "email": "prof.pwd@example.edu", "password": "oldPassword123"},
+    )
+
+    resp = client.put(
+        "/api/auth/change-password",
+        json={"current_password": "oldPassword123", "new_password": "newSecurePassword456"},
+    )
+    assert resp.status_code == 200
+    assert "Password updated successfully" in resp.json()["message"]
+
+    # Log out
+    client.post("/api/auth/logout")
+
+    # Old password must now fail
+    old_login = client.post(
+        "/api/auth/login",
+        json={"email": "prof.pwd@example.edu", "password": "oldPassword123"},
+    )
+    assert old_login.status_code == 401
+
+    # New password must succeed
+    new_login = client.post(
+        "/api/auth/login",
+        json={"email": "prof.pwd@example.edu", "password": "newSecurePassword456"},
+    )
+    assert new_login.status_code == 200
+
+
+def test_change_password_invalid_current_rejected(client):
+    """Verify that providing an incorrect current password rejects the update."""
+    client.post(
+        "/api/auth/register",
+        json={"name": "Prof. SecCheck", "email": "prof.sec@example.edu", "password": "correctPassword123"},
+    )
+
+    resp = client.put(
+        "/api/auth/change-password",
+        json={"current_password": "incorrectPassword", "new_password": "newSecurePassword456"},
+    )
+    assert resp.status_code == 401
+    assert "Current password is incorrect" in resp.json()["detail"]

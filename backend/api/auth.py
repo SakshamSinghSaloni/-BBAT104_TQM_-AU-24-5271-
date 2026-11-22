@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from backend.database import get_db
 from backend.middleware.auth import clear_session_cookie, get_current_user, set_session_cookie
-from backend.models import UserCreate, UserLogin, UserResponse
+from backend.models import UserCreate, UserLogin, UserPasswordChange, UserProfileUpdate, UserResponse
 from backend.services.auth_service import AuthService
 
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
@@ -73,3 +73,39 @@ def get_me(user=Depends(get_current_user)):
         role=user.role,
         created_at=user.created_at,
     )
+
+
+@router.put("/profile", response_model=UserResponse)
+def update_profile(
+    payload: UserProfileUpdate,
+    user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Update authenticated instructor's display name.
+    Applies whitespace trimming and validation.
+    """
+    service = AuthService(db)
+    updated_user = service.update_profile(user.id, payload)
+    return UserResponse(
+        id=updated_user.id,
+        email=updated_user.email,
+        name=updated_user.name,
+        role=updated_user.role,
+        created_at=updated_user.created_at,
+    )
+
+
+@router.put("/change-password")
+def change_password(
+    payload: UserPasswordChange,
+    user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Change authenticated instructor's account password.
+    Requires verification of current password.
+    """
+    service = AuthService(db)
+    service.change_password(user.id, payload.current_password, payload.new_password)
+    return {"message": "Password updated successfully."}

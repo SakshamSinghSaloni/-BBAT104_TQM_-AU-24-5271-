@@ -9,8 +9,8 @@ import bcrypt
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-from backend.db_models import User
-from backend.models import UserCreate
+from backend.db_models import Participant, Quiz, Session as QuizSession, Submission, User
+from backend.models import UserCreate, UserProfileUpdate
 from backend.repositories.user_repo import UserRepository
 
 
@@ -69,3 +69,56 @@ class AuthService:
     def get_user_by_id(self, user_id: int) -> User | None:
         """Retrieve user by ID."""
         return self.repo.get_by_id(user_id)
+
+    def update_profile(self, user_id: int, data: UserProfileUpdate) -> User:
+        """Update user display name with sanitization and Tier 2 validation."""
+        name = data.name.strip()
+        if not name:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Display name cannot be empty or whitespace only.",
+            )
+        user = self.repo.update_profile(user_id, name)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found.",
+            )
+        return user
+
+    def change_password(self, user_id: int, current_pwd: str, new_pwd: str) -> bool:
+        """Change user password after verifying current credentials."""
+        user = self.repo.get_by_id(user_id)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found.",
+            )
+        if not verify_password(current_pwd, user.password_hash):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Current password is incorrect.",
+            )
+        if len(new_pwd) < 6:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="New password must be at least 6 characters long.",
+            )
+        new_hash = hash_password(new_pwd)
+        self.repo.update_password(user_id, new_hash)
+        return True
+
+    def get_teacher_activity_stats(self, user_id: int) -> dict:
+        """Compile activity and impact statistics for instructor dashboard and profile."""
+        total_quizzes = self.db.query(Quiz).count()
+        total_sessions = self.db.query(QuizSession).count()
+        active_sessions = self.db.query(QuizSession).filter(QuizSession.status == "active").count()
+        total_participants = self.db.query(Participant).count()
+        total_submissions = self.db.query(Submission).count()
+        return {
+            "total_quizzes": total_quizzes,
+            "total_sessions": total_sessions,
+            "active_sessions": active_sessions,
+            "total_participants": total_participants,
+            "total_submissions": total_submissions,
+        }
